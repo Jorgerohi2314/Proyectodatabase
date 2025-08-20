@@ -7,7 +7,7 @@ import { UserTable } from "@/components/user-table"
 import { UserSearchClient, SearchFilters } from "@/components/user-search-client"
 import { UserForm } from "@/components/user-form"
 import { UserDetailView } from "@/components/user-detail-view"
-import { Plus, Users } from "lucide-react"
+import { Plus, Users, CardSimIcon } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
 
@@ -195,7 +195,7 @@ export default function Home() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="h-8 w-8" />
+          <CardSimIcon className="h-8 w-8" />
           <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
         </div>
         <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">

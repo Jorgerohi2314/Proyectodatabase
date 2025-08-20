@@ -14,10 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
+  title: "Base de Datos de Usuarios",
   description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
   keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  authors: [{ name: "Jorge Rodriguez" }],
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
   openGraph: {
     title: "Z.ai Code Scaffold",
     description: "AI-powered development with modern React stack",
@@ -44,7 +49,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
-      </body>
+      </body>   
     </html>
   );
 }
