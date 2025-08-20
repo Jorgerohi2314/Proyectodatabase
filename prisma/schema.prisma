@@ -46,7 +46,6 @@ model UserProfile {
   nombre                   String
   apellidos                String
   fechaNacimiento          DateTime
-  edad                     Int
   nacionalidad             String
   documentoIdentidad       String
   sexo                     Gender

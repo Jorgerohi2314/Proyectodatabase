@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ const personalDataSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
   apellidos: z.string().min(1, "Los apellidos son requeridos"),
   fechaNacimiento: z.string().min(1, "La fecha de nacimiento es requerida"),
-  edad: z.number().min(1, "La edad es requerida"),
   nacionalidad: z.string().min(1, "La nacionalidad es requerida"),
   documentoIdentidad: z.string().min(1, "El documento de identidad es requerido"),
   sexo: z.enum(["HOMBRE", "MUJER"]),
@@ -95,6 +94,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     handleSubmit,
     watch,
     setValue,
+    control,
     formState: { errors },
     reset,
   } = useForm<FormData>({
@@ -117,8 +117,90 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     },
   })
 
+  useEffect(() => {
+    if (user) {
+      // Cargar datos del usuario cuando se está editando
+      reset({
+        personalData: {
+          nombre: user.nombre || "",
+          apellidos: user.apellidos || "",
+          fechaNacimiento: user.fechaNacimiento ? new Date(user.fechaNacimiento).toISOString().split('T')[0] : "",
+          nacionalidad: user.nacionalidad || "",
+          documentoIdentidad: user.documentoIdentidad || "",
+          sexo: user.sexo || "HOMBRE",
+          direccion: user.direccion || "",
+          localidad: user.localidad || "",
+          codigoPostal: user.codigoPostal || "",
+          telefono1: user.telefono1 || "",
+          telefono2: user.telefono2 || "",
+          email: user.email || "",
+          carnetConducir: user.carnetConducir || "NO",
+          vehiculoPropio: user.vehiculoPropio || "NO",
+          tieneDiscapacidad: user.tieneDiscapacidad || "NO",
+          porcentajeDiscapacidad: user.porcentajeDiscapacidad || 0,
+          tipoDiscapacidad: user.tipoDiscapacidad || "",
+          entidadDerivacion: user.entidadDerivacion || "",
+          tecnicoDerivacion: user.tecnicoDerivacion || "",
+          colectivo: user.colectivo || "",
+        },
+        socioEconomicData: user.socioEconomicData ? {
+          composicionFamiliar: user.socioEconomicData.composicionFamiliar || "",
+          situacionEconomica: user.socioEconomicData.situacionEconomica || "",
+          otrasCircunstancias: user.socioEconomicData.otrasCircunstancias || "",
+        } : {
+          composicionFamiliar: "",
+          situacionEconomica: "",
+          otrasCircunstancias: "",
+        },
+        educationData: user.educationData ? {
+          formacionAcademica: user.educationData.formacionAcademica || "SIN_ESTUDIOS",
+          anioFinalizacion: user.educationData.anioFinalizacion || undefined,
+          especificacionOtros: user.educationData.especificacionOtros || "",
+          experienciaLaboralPrevia: user.educationData.experienciaLaboralPrevia || "",
+        } : {
+          formacionAcademica: "SIN_ESTUDIOS",
+        },
+        complementaryCourses: user.complementaryCourses || [],
+        incomeMembers: user.incomeMembers || [],
+      })
+      
+      setComplementaryCourses(user.complementaryCourses || [])
+      setIncomeMembers(user.incomeMembers || [])
+    }
+  }, [user, reset])
+
   const tieneDiscapacidad = watch("personalData.tieneDiscapacidad")
   const formacionAcademica = watch("educationData.formacionAcademica")
+
+  // Función para determinar si se debe mostrar el campo de especificación
+  const mostrarEspecificacion = () => {
+    const opcionesConEspecificacion = [
+      "FPI_CICLO_GRADO_MEDIO",
+      "FPII_CICLO_GRADO_SUPERIOR", 
+      "DIPLOMADO_ING_TECNICO",
+      "LICENCIADO_ING_SUPERIOR",
+      "OTROS"
+    ]
+    return opcionesConEspecificacion.includes(formacionAcademica)
+  }
+
+  // Función para obtener la etiqueta del campo de especificación según la opción seleccionada
+  const getLabelEspecificacion = () => {
+    switch (formacionAcademica) {
+      case "FPI_CICLO_GRADO_MEDIO":
+        return "Especificar Ciclo de Grado Medio"
+      case "FPII_CICLO_GRADO_SUPERIOR":
+        return "Especificar Ciclo de Grado Superior"
+      case "DIPLOMADO_ING_TECNICO":
+        return "Especificar Diplomado/Ingeniería Técnica"
+      case "LICENCIADO_ING_SUPERIOR":
+        return "Especificar Licenciatura/Ingeniería Superior"
+      case "OTROS":
+        return "Especificación"
+      default:
+        return "Especificación"
+    }
+  }
 
   const onSubmit = (data: FormData) => {
     const completeData = {
@@ -234,17 +316,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="edad">Edad *</Label>
-                    <Input
-                      id="edad"
-                      type="number"
-                      {...register("personalData.edad", { valueAsNumber: true })}
-                    />
-                    {errors.personalData?.edad && (
-                      <p className="text-sm text-red-600">{errors.personalData.edad.message}</p>
-                    )}
-                  </div>
-                  <div>
                     <Label htmlFor="nacionalidad">Nacionalidad *</Label>
                     <Input
                       id="nacionalidad"
@@ -266,15 +337,25 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                   </div>
                   <div>
                     <Label htmlFor="sexo">Sexo *</Label>
-                    <Select onValueChange={(value) => setValue("personalData.sexo", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="HOMBRE">Hombre</SelectItem>
-                        <SelectItem value="MUJER">Mujer</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="personalData.sexo"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
+                            <SelectItem value="HOMBRE">Hombre</SelectItem>
+                            <SelectItem value="MUJER">Mujer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.personalData?.sexo && (
+                      <p className="text-sm text-red-600">{errors.personalData.sexo.message}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="direccion">Dirección *</Label>
@@ -327,42 +408,72 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                   </div>
                   <div>
                     <Label htmlFor="carnetConducir">Carnet de Conducir</Label>
-                    <Select onValueChange={(value) => setValue("personalData.carnetConducir", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SI">Sí</SelectItem>
-                        <SelectItem value="NO">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="personalData.carnetConducir"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
+                            <SelectItem value="SI">Sí</SelectItem>
+                            <SelectItem value="NO">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.personalData?.carnetConducir && (
+                      <p className="text-sm text-red-600">{errors.personalData.carnetConducir.message}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="vehiculoPropio">Vehículo Propio</Label>
-                    <Select onValueChange={(value) => setValue("personalData.vehiculoPropio", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SI">Sí</SelectItem>
-                        <SelectItem value="NO">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="personalData.vehiculoPropio"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
+                            <SelectItem value="SI">Sí</SelectItem>
+                            <SelectItem value="NO">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.personalData?.vehiculoPropio && (
+                      <p className="text-sm text-red-600">{errors.personalData.vehiculoPropio.message}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="tieneDiscapacidad">¿Tiene Discapacidad?</Label>
-                    <Select onValueChange={(value) => setValue("personalData.tieneDiscapacidad", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SI">Sí</SelectItem>
-                        <SelectItem value="NO">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="personalData.tieneDiscapacidad"
+                      control={control}
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
+                            <SelectItem value="SI">Sí</SelectItem>
+                            <SelectItem value="NO">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.personalData?.tieneDiscapacidad && (
+                      <p className="text-sm text-red-600">{errors.personalData.tieneDiscapacidad.message}</p>
+                    )}
                   </div>
 
                   {tieneDiscapacidad === "SI" && (
@@ -510,31 +621,42 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="formacionAcademica">Formación Académica *</Label>
-                  <Select onValueChange={(value) => setValue("educationData.formacionAcademica", value as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="SIN_ESTUDIOS">Sin Estudios</SelectItem>
-                      <SelectItem value="ESTUDIOS_PRIMARIOS">Estudios Primarios</SelectItem>
-                      <SelectItem value="CERTIFICADO_ESCOLARIDAD">Certificado de Escolaridad</SelectItem>
-                      <SelectItem value="EGB">E.G.B.</SelectItem>
-                      <SelectItem value="ESO">E.S.O.</SelectItem>
-                      <SelectItem value="BACHILLER">Bachiller</SelectItem>
-                      <SelectItem value="FPI_CICLO_GRADO_MEDIO">F.P.I/Ciclo Gº Medio</SelectItem>
-                      <SelectItem value="FPII_CICLO_GRADO_SUPERIOR">F.P.II/Ciclo Gº Superior</SelectItem>
-                      <SelectItem value="DIPLOMADO_ING_TECNICO">Diplomado/Ing. Técnico</SelectItem>
-                      <SelectItem value="LICENCIADO_ING_SUPERIOR">Licenciado/Ing. Superior</SelectItem>
-                      <SelectItem value="OTROS">Otros</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="educationData.formacionAcademica"
+                    control={control}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
+                          <SelectItem value="SIN_ESTUDIOS">Sin Estudios</SelectItem>
+                          <SelectItem value="ESTUDIOS_PRIMARIOS">Estudios Primarios</SelectItem>
+                          <SelectItem value="CERTIFICADO_ESCOLARIDAD">Certificado de Escolaridad</SelectItem>
+                          <SelectItem value="EGB">E.G.B.</SelectItem>
+                          <SelectItem value="ESO">E.S.O.</SelectItem>
+                          <SelectItem value="BACHILLER">Bachiller</SelectItem>
+                          <SelectItem value="FPI_CICLO_GRADO_MEDIO">F.P.I/Ciclo Gº Medio</SelectItem>
+                          <SelectItem value="FPII_CICLO_GRADO_SUPERIOR">F.P.II/Ciclo Gº Superior</SelectItem>
+                          <SelectItem value="DIPLOMADO_ING_TECNICO">Diplomado/Ing. Técnico</SelectItem>
+                          <SelectItem value="LICENCIADO_ING_SUPERIOR">Licenciado/Ing. Superior</SelectItem>
+                          <SelectItem value="OTROS">Otros</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.educationData?.formacionAcademica && (
+                    <p className="text-sm text-red-600">{errors.educationData.formacionAcademica.message}</p>
+                  )}
                 </div>
 
-                {formacionAcademica === "OTROS" && (
+                {mostrarEspecificacion() && (
                   <div>
-                    <Label htmlFor="especificacionOtros">Especificación</Label>
+                    <Label htmlFor="especificacionOtros">{getLabelEspecificacion()}</Label>
                     <Input
                       id="especificacionOtros"
+                      placeholder={getLabelEspecificacion()}
                       {...register("educationData.especificacionOtros")}
                     />
                   </div>

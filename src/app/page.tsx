@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { UserTable } from "@/components/user-table"
-import { UserSearch, SearchFilters } from "@/components/user-search"
+import { UserSearchClient, SearchFilters } from "@/components/user-search-client"
 import { UserForm } from "@/components/user-form"
+import { UserDetailView } from "@/components/user-detail-view"
 import { Plus, Users } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
@@ -45,7 +46,7 @@ export default function Home() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showViewForm, setShowViewForm] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
+  const [selectedUser, setSelectedUser] = useState<UserWithRelations | null>(null)
 
   const fetchUsers = async (filters?: SearchFilters) => {
     try {
@@ -124,9 +125,19 @@ export default function Home() {
     setShowEditForm(true)
   }
 
-  const handleView = (user: UserProfile) => {
-    setSelectedUser(user)
-    setShowViewForm(true)
+  const handleView = async (user: UserProfile) => {
+    try {
+      const response = await fetch(`/api/users/${user.id}`)
+      if (response.ok) {
+        const fullUserData = await response.json()
+        setSelectedUser(fullUserData)
+        setShowViewForm(true)
+      } else {
+        toast.error("Error al cargar los detalles del usuario")
+      }
+    } catch (error) {
+      toast.error("Error al cargar los detalles del usuario")
+    }
   }
 
   const handleCreateUser = async (data: any) => {
@@ -193,7 +204,7 @@ export default function Home() {
         </Button>
       </div>
 
-      <UserSearch onSearch={handleSearch} onClear={handleClear} />
+      <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
 
       <Card>
         <CardHeader>
@@ -212,8 +223,8 @@ export default function Home() {
       </Card>
 
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <UserForm
               onSave={handleCreateUser}
               onCancel={() => setShowCreateForm(false)}
@@ -223,8 +234,8 @@ export default function Home() {
       )}
 
       {showEditForm && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <UserForm
               user={selectedUser}
               onSave={handleUpdateUser}
@@ -238,43 +249,15 @@ export default function Home() {
       )}
 
       {showViewForm && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Detalles del Usuario</h2>
-              <Button variant="outline" onClick={() => {
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <UserDetailView 
+              user={selectedUser} 
+              onClose={() => {
                 setShowViewForm(false)
                 setSelectedUser(null)
-              }}>
-                Cerrar
-              </Button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold">Nombre:</h3>
-                <p>{selectedUser.nombre} {selectedUser.apellidos}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Edad:</h3>
-                <p>{selectedUser.edad}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Localidad:</h3>
-                <p>{selectedUser.localidad}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Teléfono:</h3>
-                <p>{selectedUser.telefono1 || "No disponible"}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Email:</h3>
-                <p>{selectedUser.email || "No disponible"}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Discapacidad:</h3>
-                <p>{selectedUser.tieneDiscapacidad === "SI" ? `Sí (${selectedUser.porcentajeDiscapacidad || 0}%)` : "No"}</p>
-              </div>
-            </div>
+              }} 
+            />
           </div>
         </div>
       )}

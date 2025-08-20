@@ -8,11 +8,7 @@ export async function GET(request: NextRequest) {
     const filters = {
       nombre: searchParams.get('nombre') || undefined,
       apellidos: searchParams.get('apellidos') || undefined,
-      localidad: searchParams.get('localidad') || undefined,
-      tieneDiscapacidad: searchParams.get('tieneDiscapacidad') || undefined,
       formacionAcademica: searchParams.get('formacionAcademica') || undefined,
-      idiomas: searchParams.get('idiomas') || undefined,
-      informatica: searchParams.get('informatica') || undefined,
     }
 
     const whereClause: any = {}
@@ -23,32 +19,9 @@ export async function GET(request: NextRequest) {
     if (filters.apellidos) {
       whereClause.apellidos = { contains: filters.apellidos, mode: 'insensitive' }
     }
-    if (filters.localidad) {
-      whereClause.localidad = { contains: filters.localidad, mode: 'insensitive' }
-    }
-    if (filters.tieneDiscapacidad) {
-      whereClause.tieneDiscapacidad = filters.tieneDiscapacidad
-    }
     if (filters.formacionAcademica) {
       whereClause.educationData = {
         formacionAcademica: filters.formacionAcademica
-      }
-    }
-    if (filters.idiomas || filters.informatica) {
-      whereClause.complementaryCourses = {
-        some: {}
-      }
-      if (filters.idiomas) {
-        whereClause.complementaryCourses.some.nombreCurso = { 
-          contains: filters.idiomas, 
-          mode: 'insensitive' 
-        }
-      }
-      if (filters.informatica) {
-        whereClause.complementaryCourses.some.nombreCurso = { 
-          contains: filters.informatica, 
-          mode: 'insensitive' 
-        }
       }
     }
 
