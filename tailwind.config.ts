@@ -37,11 +37,17 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--accent))',
   				foreground: 'hsl(var(--accent-foreground))'
   			},
-  			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
-  			},
-  			border: 'hsl(var(--border))',
+  						destructive: {
+				DEFAULT: 'hsl(var(--destructive))',
+				foreground: 'hsl(var(--destructive-foreground))'
+			},
+			bottle: {
+				DEFAULT: 'oklch(0.3309 0.1677 142.94)',
+				light: 'oklch(0.45 0.1677 142.94)',
+				dark: 'oklch(0.25 0.1677 142.94)',
+				foreground: '#FFFFFF'
+			},
+			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
   			chart: {
