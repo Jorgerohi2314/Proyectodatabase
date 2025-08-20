@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum AcademicLevel {
+  SIN_ESTUDIOS
+  ESTUDIOS_PRIMARIOS
+  CERTIFICADO_ESCOLARIDAD
+  EGB
+  ESO
+  BACHILLER
+  FPI_CICLO_GRADO_MEDIO
+  FPII_CICLO_GRADO_SUPERIOR
+  DIPLOMADO_ING_TECNICO
+  LICENCIADO_ING_SUPERIOR
+  OTROS
+}
+
+enum Gender {
+  HOMBRE
+  MUJER
+}
+
+enum YesNo {
+  SI
+  NO
+}
+
+model UserProfile {
+  id                       String   @id @default(cuid())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  // Datos personales
+  nombre                   String
+  apellidos                String
+  fechaNacimiento          DateTime
+  edad                     Int
+  nacionalidad             String
+  documentoIdentidad       String
+  sexo                     Gender
+  direccion                String
+  localidad                String
+  codigoPostal             String?
+  telefono1                String?
+  telefono2                String?
+  email                    String?
+  carnetConducir           YesNo    @default(NO)
+  vehiculoPropio           YesNo    @default(NO)
+  
+  // Discapacidad
+  tieneDiscapacidad        YesNo    @default(NO)
+  porcentajeDiscapacidad   Int?
+  tipoDiscapacidad         String?
+  entidadDerivacion        String?
+  tecnicoDerivacion        String?
+  colectivo                String?
+
+  // Relaciones
+  socioEconomicData        SocioEconomicData?
+  educationData            EducationData?
+  complementaryCourses     ComplementaryCourse[]
+  incomeMembers            IncomeMember[]
+
+  @@map("user_profiles")
+}
+
+model SocioEconomicData {
+  id                       String   @id @default(cuid())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  composicionFamiliar      String
+  situacionEconomica       String
+  otrasCircunstancias      String?
+
+  userProfileId            String   @unique
+  userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@map("socio_economic_data")
+}
+
+model EducationData {
+  id                       String   @id @default(cuid())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  formacionAcademica       AcademicLevel
+  anioFinalizacion         Int?
+  especificacionOtros      String?
+  experienciaLaboralPrevia String?
+
+  userProfileId            String   @unique
+  userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@map("education_data")
+}
+
+model ComplementaryCourse {
+  id                       String   @id @default(cuid())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  nombreCurso              String
+  duracionHoras            Int
+  entidad                  String
+  fechaRealizacion         DateTime
+
+  userProfileId            String
+  userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@map("complementary_courses")
+}
+
+model IncomeMember {
+  id                       String   @id @default(cuid())
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  numero                   Int
+  tipo                     String
+  cantidad                 Float
+
+  userProfileId            String
+  userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@map("income_members")
+}
