@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { UserTable } from "@/components/user-table"
-import { UserSearchClient, SearchFilters } from "@/components/user-search-client"
+import { UserSearchClient } from "@/components/user-search-client"
+import type { SearchFilters } from "@/components/user-search"
 import { UserForm } from "@/components/user-form"
 import { UserDetailView } from "@/components/user-detail-view"
 import { Plus, Users, CardSimIcon } from "lucide-react"
@@ -54,7 +55,7 @@ export default function Home() {
       const params = new URLSearchParams()
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
-          if (value) params.append(key, value)
+          if (value) params.append(key, value as string)
         })
       }
       
@@ -237,6 +238,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <UserForm
+              key={selectedUser.id}
               user={selectedUser}
               onSave={handleUpdateUser}
               onCancel={() => {

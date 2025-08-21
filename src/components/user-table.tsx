@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Trash2, Download, Eye } from "lucide-react"
 import { UserProfile } from "@prisma/client"
+import { calcularEdad } from "@/lib/utils/edad"
 import { LoadingSpinner } from "./loading-spinner"
 
 interface UserTableProps {
@@ -66,7 +67,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
             <TableRow key={user.id} className="hover:bg-gray-50">
               <TableCell className="font-medium">{user.nombre}</TableCell>
               <TableCell>{user.apellidos}</TableCell>
-              <TableCell>{user.edad}</TableCell>
+              <TableCell>{calcularEdad(user.fechaNacimiento as unknown as Date)}</TableCell>
               <TableCell>{user.localidad}</TableCell>
               <TableCell>{user.telefono1 || "-"}</TableCell>
               <TableCell>{user.email || "-"}</TableCell>

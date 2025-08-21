@@ -22,6 +22,7 @@ const personalDataSchema = z.object({
   fechaNacimiento: z.string().min(1, "La fecha de nacimiento es requerida"),
   nacionalidad: z.string().min(1, "La nacionalidad es requerida"),
   documentoIdentidad: z.string().min(1, "El documento de identidad es requerido"),
+  numeroSeguridadSocial: z.string().optional(),
   sexo: z.enum(["HOMBRE", "MUJER"]),
   direccion: z.string().min(1, "La dirección es requerida"),
   localidad: z.string().min(1, "La localidad es requerida"),
@@ -79,8 +80,25 @@ const fullSchema = z.object({
 
 type FormData = z.infer<typeof fullSchema>
 
+interface UserWithOptionalRelations extends UserProfile {
+  socioEconomicData?: {
+    composicionFamiliar?: string
+    situacionEconomica?: string
+    otrasCircunstancias?: string
+  }
+  educationData?: {
+    formacionAcademica?: any
+    anioFinalizacion?: number | null
+    especificacionOtros?: string | null
+    experienciaLaboralPrevia?: string | null
+  }
+  complementaryCourses?: any[]
+  incomeMembers?: any[]
+  numeroSeguridadSocial?: string | null
+}
+
 interface UserFormProps {
-  user?: UserProfile
+  user?: UserWithOptionalRelations
   onSave: (data: any) => void
   onCancel: () => void
 }
@@ -101,6 +119,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     resolver: zodResolver(fullSchema),
     defaultValues: {
       personalData: {
+        sexo: "HOMBRE",
         carnetConducir: "NO",
         vehiculoPropio: "NO",
         tieneDiscapacidad: "NO",
@@ -127,6 +146,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
           fechaNacimiento: user.fechaNacimiento ? new Date(user.fechaNacimiento).toISOString().split('T')[0] : "",
           nacionalidad: user.nacionalidad || "",
           documentoIdentidad: user.documentoIdentidad || "",
+          numeroSeguridadSocial: (user as any).numeroSeguridadSocial || "",
           sexo: user.sexo || "HOMBRE",
           direccion: user.direccion || "",
           localidad: user.localidad || "",
@@ -336,6 +356,13 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                     )}
                   </div>
                   <div>
+                    <Label htmlFor="numeroSeguridadSocial">Número de Seguridad Social</Label>
+                    <Input
+                      id="numeroSeguridadSocial"
+                      {...register("personalData.numeroSeguridadSocial")}
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="sexo">Sexo *</Label>
                     <Controller
                       name="personalData.sexo"
@@ -346,7 +373,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                             <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
                             <SelectItem value="HOMBRE">Hombre</SelectItem>
                             <SelectItem value="MUJER">Mujer</SelectItem>
                           </SelectContent>
@@ -417,7 +443,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                             <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
                             <SelectItem value="SI">Sí</SelectItem>
                             <SelectItem value="NO">No</SelectItem>
                           </SelectContent>
@@ -439,7 +464,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                             <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
                             <SelectItem value="SI">Sí</SelectItem>
                             <SelectItem value="NO">No</SelectItem>
                           </SelectContent>
@@ -464,7 +488,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                             <SelectValue placeholder="Seleccionar..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
                             <SelectItem value="SI">Sí</SelectItem>
                             <SelectItem value="NO">No</SelectItem>
                           </SelectContent>
@@ -630,7 +653,6 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SELECCIONAR">Seleccionar...</SelectItem>
                           <SelectItem value="SIN_ESTUDIOS">Sin Estudios</SelectItem>
                           <SelectItem value="ESTUDIOS_PRIMARIOS">Estudios Primarios</SelectItem>
                           <SelectItem value="CERTIFICADO_ESCOLARIDAD">Certificado de Escolaridad</SelectItem>

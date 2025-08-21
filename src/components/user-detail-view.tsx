@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility } from "lucide-react"
+import { calcularEdad } from "@/lib/utils/edad"
 
 interface UserDetailViewProps {
   user: any
@@ -78,7 +79,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   <span className="h-4 w-4 text-gray-500">🎂</span>
                   <div>
                     <p className="text-sm text-gray-600">Edad</p>
-                    <p className="font-medium">{user.edad} años</p>
+                    <p className="font-medium">{calcularEdad(user.fechaNacimiento)} años</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
