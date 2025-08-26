@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       data: {
         nombre: data.nombre,
         apellidos: data.apellidos,
-        fechaNacimiento: new Date(data.fechaNacimiento),
+        fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : new Date(),
         nacionalidad: data.nacionalidad,
         documentoIdentidad: data.documentoIdentidad,
         numeroSeguridadSocial: data.numeroSeguridadSocial,
@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
         entidadDerivacion: data.entidadDerivacion,
         tecnicoDerivacion: data.tecnicoDerivacion,
         colectivo: data.colectivo,
+        insertado: data.insertado ?? 'NO',
+        sector: data.sector,
+        empresa: data.empresa,
         socioEconomicData: data.socioEconomicData ? {
           create: {
             composicionFamiliar: data.socioEconomicData.composicionFamiliar,

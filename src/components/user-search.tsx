@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +24,9 @@ export interface SearchFilters {
 export function UserSearch({ onSearch, onClear }: UserSearchProps) {
   const [filters, setFilters] = useState<SearchFilters>({})
   const [isClient, setIsClient] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [stats, setStats] = useState<Array<{ sector: string; count: number }>>([])
+  const [loadingStats, setLoadingStats] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -34,6 +39,21 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
   const handleClear = () => {
     setFilters({})
     onClear()
+  }
+
+  const openInsercionStats = async () => {
+    try {
+      setLoadingStats(true)
+      setIsDialogOpen(true)
+      const res = await fetch('/api/users/insercion', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Error al cargar estadísticas')
+      const data = await res.json()
+      setStats(Array.isArray(data) ? data : [])
+    } catch (e) {
+      setStats([])
+    } finally {
+      setLoadingStats(false)
+    }
   }
 
   const hasActiveFilters = Object.values(filters).some(value => value && value !== "")
@@ -131,7 +151,40 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
               Limpiar ({activeFiltersCount})
             </Button>
           )}
+          <Button variant="secondary" onClick={openInsercionStats} className="ml-auto">
+            Inserciones por sector
+          </Button>
         </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Inserciones por sector</DialogTitle>
+            </DialogHeader>
+            {loadingStats ? (
+              <div className="py-8 text-center text-sm text-gray-500">Cargando...</div>
+            ) : stats.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-500">Sin datos</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sector</TableHead>
+                    <TableHead className="text-right">Insertados</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stats.map((row) => (
+                    <TableRow key={row.sector}>
+                      <TableCell>{row.sector}</TableCell>
+                      <TableCell className="text-right">{row.count}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useForm, Controller, SubmitHandler } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -23,16 +23,16 @@ const personalDataSchema = z.object({
   nacionalidad: z.string().min(1, "La nacionalidad es requerida"),
   documentoIdentidad: z.string().min(1, "El documento de identidad es requerido"),
   numeroSeguridadSocial: z.string().optional(),
-  sexo: z.enum(["HOMBRE", "MUJER"]),
+  sexo: z.enum(["HOMBRE", "MUJER"]).default("HOMBRE"),
   direccion: z.string().min(1, "La dirección es requerida"),
   localidad: z.string().min(1, "La localidad es requerida"),
   codigoPostal: z.string().optional(),
   telefono1: z.string().optional(),
   telefono2: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
-  carnetConducir: z.enum(["SI", "NO"]),
-  vehiculoPropio: z.enum(["SI", "NO"]),
-  tieneDiscapacidad: z.enum(["SI", "NO"]),
+  carnetConducir: z.enum(["SI", "NO"]).default("NO"),
+  vehiculoPropio: z.enum(["SI", "NO"]).default("NO"),
+  tieneDiscapacidad: z.enum(["SI", "NO"]).default("NO"),
   porcentajeDiscapacidad: z.number().optional(),
   tipoDiscapacidad: z.string().optional(),
   entidadDerivacion: z.string().optional(),
@@ -41,20 +41,26 @@ const personalDataSchema = z.object({
 })
 
 const socioEconomicDataSchema = z.object({
-  composicionFamiliar: z.string().min(1, "La composición familiar es requerida"),
-  situacionEconomica: z.string().min(1, "La situación económica es requerida"),
+  composicionFamiliar: z.string().optional(),
+  situacionEconomica: z.string().optional(),
   otrasCircunstancias: z.string().optional(),
-})
+}).optional()
 
 const educationDataSchema = z.object({
   formacionAcademica: z.enum([
     "SIN_ESTUDIOS", "ESTUDIOS_PRIMARIOS", "CERTIFICADO_ESCOLARIDAD", "EGB", "ESO",
     "BACHILLER", "FPI_CICLO_GRADO_MEDIO", "FPII_CICLO_GRADO_SUPERIOR",
     "DIPLOMADO_ING_TECNICO", "LICENCIADO_ING_SUPERIOR", "OTROS"
-  ]),
+  ]).default("SIN_ESTUDIOS"),
   anioFinalizacion: z.number().optional(),
   especificacionOtros: z.string().optional(),
   experienciaLaboralPrevia: z.string().optional(),
+})
+
+const insercionSchema = z.object({
+  insertado: z.enum(["SI", "NO"]).default("NO"),
+  sector: z.string().optional(),
+  empresa: z.string().optional(),
 })
 
 const courseSchema = z.object({
@@ -74,6 +80,7 @@ const fullSchema = z.object({
   personalData: personalDataSchema,
   socioEconomicData: socioEconomicDataSchema,
   educationData: educationDataSchema,
+  insercion: insercionSchema,
   complementaryCourses: z.array(courseSchema),
   incomeMembers: z.array(incomeMemberSchema),
 })
@@ -94,7 +101,6 @@ interface UserWithOptionalRelations extends UserProfile {
   }
   complementaryCourses?: any[]
   incomeMembers?: any[]
-  numeroSeguridadSocial?: string | null
 }
 
 interface UserFormProps {
@@ -116,7 +122,8 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     formState: { errors },
     reset,
   } = useForm<FormData>({
-    resolver: zodResolver(fullSchema),
+    resolver: zodResolver(fullSchema) as any,
+    shouldUnregister: false,
     defaultValues: {
       personalData: {
         sexo: "HOMBRE",
@@ -124,13 +131,9 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
         vehiculoPropio: "NO",
         tieneDiscapacidad: "NO",
       },
-      socioEconomicData: {
-        composicionFamiliar: "",
-        situacionEconomica: "",
-      },
-      educationData: {
-        formacionAcademica: "SIN_ESTUDIOS",
-      },
+      socioEconomicData: undefined,
+      educationData: undefined,
+      insercion: { insertado: "NO", sector: "", empresa: "" },
       complementaryCourses: [],
       incomeMembers: [],
     },
@@ -167,18 +170,17 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
           composicionFamiliar: user.socioEconomicData.composicionFamiliar || "",
           situacionEconomica: user.socioEconomicData.situacionEconomica || "",
           otrasCircunstancias: user.socioEconomicData.otrasCircunstancias || "",
-        } : {
-          composicionFamiliar: "",
-          situacionEconomica: "",
-          otrasCircunstancias: "",
-        },
+        } : undefined,
         educationData: user.educationData ? {
           formacionAcademica: user.educationData.formacionAcademica || "SIN_ESTUDIOS",
           anioFinalizacion: user.educationData.anioFinalizacion || undefined,
           especificacionOtros: user.educationData.especificacionOtros || "",
           experienciaLaboralPrevia: user.educationData.experienciaLaboralPrevia || "",
-        } : {
-          formacionAcademica: "SIN_ESTUDIOS",
+        } : undefined,
+        insercion: {
+          insertado: (user as any).insertado || "NO",
+          sector: (user as any).sector || "",
+          empresa: (user as any).empresa || "",
         },
         complementaryCourses: user.complementaryCourses || [],
         incomeMembers: user.incomeMembers || [],
@@ -190,7 +192,8 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
   }, [user, reset])
 
   const tieneDiscapacidad = watch("personalData.tieneDiscapacidad")
-  const formacionAcademica = watch("educationData.formacionAcademica")
+  const formacionAcademica = watch("educationData.formacionAcademica") as any
+  const insertado = watch("insercion.insertado")
 
   // Función para determinar si se debe mostrar el campo de especificación
   const mostrarEspecificacion = () => {
@@ -222,11 +225,21 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     }
   }
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    const socioEconomicData = data.socioEconomicData && (data.socioEconomicData.composicionFamiliar || data.socioEconomicData.situacionEconomica || data.socioEconomicData.otrasCircunstancias)
+      ? data.socioEconomicData
+      : undefined
+    const educationData = data.educationData && data.educationData.formacionAcademica
+      ? data.educationData
+      : undefined
+    const insercion = data.insercion
     const completeData = {
       ...data.personalData,
-      socioEconomicData: data.socioEconomicData,
-      educationData: data.educationData,
+      socioEconomicData,
+      educationData,
+      insertado: insercion.insertado,
+      sector: insercion.insertado === "SI" ? insercion.sector : undefined,
+      empresa: insercion.insertado === "SI" ? insercion.empresa : undefined,
       complementaryCourses,
       incomeMembers,
     }
@@ -291,10 +304,11 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="personal">Datos Personales</TabsTrigger>
             <TabsTrigger value="socio">Socio-Económicos</TabsTrigger>
             <TabsTrigger value="education">Formativos</TabsTrigger>
+            <TabsTrigger value="insercion">Inserción</TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal" className="space-y-4">
@@ -757,6 +771,70 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="insercion" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inserción Laboral</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="insertado">¿Inserción laboral?</Label>
+                  <Controller
+                    name="insercion.insertado"
+                    control={control}
+                    defaultValue={"NO" as any}
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SI">Sí</SelectItem>
+                          <SelectItem value="NO">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                {insertado === "SI" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="sector">Sector</Label>
+                      <Controller
+                        name="insercion.sector"
+                        control={control}
+                        defaultValue={"" as any}
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Agricultura">Agricultura</SelectItem>
+                              <SelectItem value="Hortofruticola">Hortofrutícola</SelectItem>
+                              <SelectItem value="Obra">Obra</SelectItem>
+                              <SelectItem value="Ganaderia">Ganadería</SelectItem>
+                              <SelectItem value="Servicios">Servicios</SelectItem>
+                              <SelectItem value="Industria">Industria</SelectItem>
+                              <SelectItem value="Hosteleria">Hostelería</SelectItem>
+                              <SelectItem value="Comercio">Comercio</SelectItem>
+                              <SelectItem value="Otro">Otro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="empresa">Empresa</Label>
+                      <Input id="empresa" {...register("insercion.empresa")} />
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

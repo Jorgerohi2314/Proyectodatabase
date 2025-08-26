@@ -8,7 +8,8 @@ import { UserSearchClient } from "@/components/user-search-client"
 import type { SearchFilters } from "@/components/user-search"
 import { UserForm } from "@/components/user-form"
 import { UserDetailView } from "@/components/user-detail-view"
-import { Plus, Users, CardSimIcon } from "lucide-react"
+import { Plus, Users, CardSimIcon, BarChart3 } from "lucide-react"
+import Link from "next/link"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
 
@@ -199,10 +200,18 @@ export default function Home() {
           <CardSimIcon className="h-8 w-8" />
           <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
         </div>
+        <div className="flex items-center gap-2">
+        <Button asChild variant="outline" className="flex items-center gap-2">
+          <Link href="/stats">
+            <BarChart3 className="h-4 w-4" />
+            Estadísticas
+          </Link>
+        </Button>
         <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Nuevo Usuario
         </Button>
+        </div>
       </div>
 
       <UserSearchClient onSearch={handleSearch} onClear={handleClear} />

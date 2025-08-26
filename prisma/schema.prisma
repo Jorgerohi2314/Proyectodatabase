@@ -67,6 +67,11 @@ model UserProfile {
   tecnicoDerivacion        String?
   colectivo                String?
 
+  // Inserción laboral
+  insertado                YesNo    @default(NO)
+  sector                   String?
+  empresa                  String?
+
   // Relaciones
   socioEconomicData        SocioEconomicData?
   educationData            EducationData?
