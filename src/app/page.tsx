@@ -8,10 +8,12 @@ import { UserSearchClient } from "@/components/user-search-client"
 import type { SearchFilters } from "@/components/user-search"
 import { UserForm } from "@/components/user-form"
 import { UserDetailView } from "@/components/user-detail-view"
-import { Plus, Users, CardSimIcon, BarChart3 } from "lucide-react"
-import Link from "next/link"
+import { ProtectedRoute } from "@/components/protected-route"
+import { useAuth } from "@/contexts/auth-context"
+import { Plus, Users, CardSimIcon, BarChart3, LogOut } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface UserWithRelations extends UserProfile {
   socioEconomicData?: {
@@ -49,6 +51,7 @@ export default function Home() {
   const [showEditForm, setShowEditForm] = useState(false)
   const [showViewForm, setShowViewForm] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserWithRelations | null>(null)
+  const { logout } = useAuth()
 
   const fetchUsers = async (filters?: SearchFilters) => {
     try {
@@ -194,84 +197,90 @@ export default function Home() {
   }, [])
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CardSimIcon className="h-8 w-8" />
-          <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
+    <ProtectedRoute>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardSimIcon className="h-8 w-8" />
+            <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" className="flex items-center gap-2">
+              <Link href="/stats">
+                <BarChart3 className="h-4 w-4" />
+                Estadísticas
+              </Link>
+            </Button>
+            <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Usuario
+            </Button>
+            <Button onClick={logout} variant="outline" className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-        <Button asChild variant="outline" className="flex items-center gap-2">
-          <Link href="/stats">
-            <BarChart3 className="h-4 w-4" />
-            Estadísticas
-          </Link>
-        </Button>
-        <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Nuevo Usuario
-        </Button>
-        </div>
+
+        <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Usuarios</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UserTable
+              users={users}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onView={handleView}
+              onDownloadPDF={handleDownloadPDF}
+              loading={loading}
+            />
+          </CardContent>
+        </Card>
+
+        {showCreateForm && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <UserForm
+                onSave={handleCreateUser}
+                onCancel={() => setShowCreateForm(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {showEditForm && selectedUser && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <UserForm
+                key={selectedUser.id}
+                user={selectedUser}
+                onSave={handleUpdateUser}
+                onCancel={() => {
+                  setShowEditForm(false)
+                  setSelectedUser(null)
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {showViewForm && selectedUser && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <UserDetailView 
+                user={selectedUser} 
+                onClose={() => {
+                  setShowViewForm(false)
+                  setSelectedUser(null)
+                }} 
+              />
+            </div>
+          </div>
+        )}
       </div>
-
-      <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Usuarios</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <UserTable
-            users={users}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
-            onDownloadPDF={handleDownloadPDF}
-            loading={loading}
-          />
-        </CardContent>
-      </Card>
-
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <UserForm
-              onSave={handleCreateUser}
-              onCancel={() => setShowCreateForm(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {showEditForm && selectedUser && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <UserForm
-              key={selectedUser.id}
-              user={selectedUser}
-              onSave={handleUpdateUser}
-              onCancel={() => {
-                setShowEditForm(false)
-                setSelectedUser(null)
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {showViewForm && selectedUser && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <UserDetailView 
-              user={selectedUser} 
-              onClose={() => {
-                setShowViewForm(false)
-                setSelectedUser(null)
-              }} 
-            />
-          </div>
-        </div>
-      )}
-    </div>
+    </ProtectedRoute>
   )
 }

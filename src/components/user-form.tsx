@@ -133,7 +133,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
       },
       socioEconomicData: undefined,
       educationData: undefined,
-      insercion: { insertado: "NO", sector: "", empresa: "" },
+      insercion: { insertado: "NO", sector: undefined as any, empresa: "" },
       complementaryCourses: [],
       incomeMembers: [],
     },
@@ -179,7 +179,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
         } : undefined,
         insercion: {
           insertado: (user as any).insertado || "NO",
-          sector: (user as any).sector || "",
+          sector: (user as any).sector ?? undefined,
           empresa: (user as any).empresa || "",
         },
         complementaryCourses: user.complementaryCourses || [],
