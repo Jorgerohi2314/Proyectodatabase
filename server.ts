@@ -1,35 +1,60 @@
-// server.ts - Next.js Standalone + Socket.IO
+// server.ts - Next.js Standalone + Socket.IO + Prisma REST test
 import { setupSocket } from '@/lib/socket';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
+import express, { Request, Response, NextFunction } from 'express';
+import { PrismaClient } from '@prisma/client';
 
 const dev = process.env.NODE_ENV !== 'production';
-const currentPort = 3000;
+const currentPort = process.env.PORT || 3000;
 const hostname = '0.0.0.0';
 
-// Custom server with Socket.IO integration
+// Creamos cliente Prisma
+const prisma = new PrismaClient();
+
+// Custom server with Socket.IO + Express + Prisma
 async function createCustomServer() {
   try {
     // Create Next.js app
-    const nextApp = next({ 
+    const nextApp = next({
       dev,
       dir: process.cwd(),
-      // In production, use the current directory where .next is located
       conf: dev ? undefined : { distDir: './.next' }
     });
-
     await nextApp.prepare();
     const handle = nextApp.getRequestHandler();
 
-    // Create HTTP server that will handle both Next.js and Socket.IO
-    const server = createServer((req, res) => {
-      // Skip socket.io requests from Next.js handler
-      if (req.url?.startsWith('/api/socketio')) {
-        return;
+    // Creamos Express app
+    const expressApp = express();
+    expressApp.use(express.json());
+
+    // ✅ Endpoints de API personalizados (antes que Next.js)
+    expressApp.get('/api/usuarios', async (req: Request, res: Response) => {
+      try {
+        const usuarios = await prisma.userProfile.findMany();
+        res.json(usuarios);
+      } catch (err) {
+        res.status(500).json({ error: 'Error obteniendo usuarios', details: err });
       }
-      handle(req, res);
     });
+
+    expressApp.post('/api/usuarios', async (req: Request, res: Response) => {
+      try {
+        const nuevo = await prisma.userProfile.create({
+          data: {
+            nombre: req.body.nombre,
+            email: req.body.email
+          }
+        });
+        res.json(nuevo);
+      } catch (err) {
+        res.status(500).json({ error: 'Error creando usuario', details: err });
+      }
+    });
+
+    // Create HTTP server PRIMERO
+    const server = createServer();
 
     // Setup Socket.IO
     const io = new Server(server, {
@@ -42,10 +67,31 @@ async function createCustomServer() {
 
     setupSocket(io);
 
+    // ✅ Manejo manual de requests
+    server.on('request', async (req, res) => {
+      try {
+        // Si es Socket.IO, no hacer nada (ya se maneja automáticamente)
+        if (req.url?.startsWith('/api/socketio')) {
+          return;
+        }
+
+        // Si es nuestra API personalizada, usar Express
+        if (req.url?.startsWith('/api/usuarios')) {
+          return expressApp(req, res);
+        }
+
+        // Todo lo demás va a Next.js
+        return handle(req, res);
+      } catch (err) {
+        console.error('Request handling error:', err);
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+      }
+    });
+
     // Start the server
-    server.listen(currentPort, hostname, () => {
+    server.listen(Number(currentPort), hostname, () => {
       console.log(`> Ready on http://${hostname}:${currentPort}`);
-      console.log(`> Socket.IO server running at ws://${hostname}:${currentPort}/api/socketio`);
     });
 
   } catch (err) {

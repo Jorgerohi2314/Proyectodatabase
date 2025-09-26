@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -44,14 +44,14 @@ model UserProfile {
 
   // Datos personales
   nombre                   String
-  apellidos                String
-  fechaNacimiento          DateTime
-  nacionalidad             String
-  documentoIdentidad       String
+  apellidos                String?
+  fechaNacimiento          DateTime?
+  nacionalidad             String?
+  documentoIdentidad       String?
   numeroSeguridadSocial    String?
-  sexo                     Gender
-  direccion                String
-  localidad                String
+  sexo                     Gender?
+  direccion                String?
+  localidad                String?
   codigoPostal             String?
   telefono1                String?
   telefono2                String?
@@ -86,8 +86,8 @@ model SocioEconomicData {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
-  composicionFamiliar      String
-  situacionEconomica       String
+  composicionFamiliar      String?
+  situacionEconomica       String?
   otrasCircunstancias      String?
 
   userProfileId            String   @unique
@@ -101,7 +101,7 @@ model EducationData {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
-  formacionAcademica       AcademicLevel
+  formacionAcademica       AcademicLevel?
   anioFinalizacion         Int?
   especificacionOtros      String?
   experienciaLaboralPrevia String?
@@ -117,10 +117,10 @@ model ComplementaryCourse {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
-  nombreCurso              String
-  duracionHoras            Int
-  entidad                  String
-  fechaRealizacion         DateTime
+  nombreCurso              String?
+  duracionHoras            Int?
+  entidad                  String?
+  fechaRealizacion         DateTime?
 
   userProfileId            String
   userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
@@ -133,9 +133,9 @@ model IncomeMember {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
-  numero                   Int
-  tipo                     String
-  cantidad                 Float
+  numero                   Int?
+  tipo                     String?
+  cantidad                 Float?
 
   userProfileId            String
   userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
