@@ -11,6 +11,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Desactiva la telemetría de Next.js para ahorrar recursos
 ENV NEXT_TELEMETRY_DISABLED 1
+
+# IMPORTANTE: Generar el cliente de Prisma antes del build
+RUN npx prisma generate
+
 # Construye la aplicación
 RUN npm run build
 
