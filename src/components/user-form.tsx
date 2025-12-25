@@ -150,16 +150,16 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
           nacionalidad: user.nacionalidad || "",
           documentoIdentidad: user.documentoIdentidad || "",
           numeroSeguridadSocial: (user as any).numeroSeguridadSocial || "",
-          sexo: user.sexo || "HOMBRE",
+          sexo: (["HOMBRE", "MUJER"].includes(user.sexo as string)) ? user.sexo as "HOMBRE" | "MUJER" : "HOMBRE",
           direccion: user.direccion || "",
           localidad: user.localidad || "",
           codigoPostal: user.codigoPostal || "",
           telefono1: user.telefono1 || "",
           telefono2: user.telefono2 || "",
           email: user.email || "",
-          carnetConducir: user.carnetConducir || "NO",
-          vehiculoPropio: user.vehiculoPropio || "NO",
-          tieneDiscapacidad: user.tieneDiscapacidad || "NO",
+          carnetConducir: (["SI", "NO"].includes(user.carnetConducir as string)) ? user.carnetConducir as "SI" | "NO" : "NO",
+          vehiculoPropio: (["SI", "NO"].includes(user.vehiculoPropio as string)) ? user.vehiculoPropio as "SI" | "NO" : "NO",
+          tieneDiscapacidad: (["SI", "NO"].includes(user.tieneDiscapacidad as string)) ? user.tieneDiscapacidad as "SI" | "NO" : "NO",
           porcentajeDiscapacidad: user.porcentajeDiscapacidad || 0,
           tipoDiscapacidad: user.tipoDiscapacidad || "",
           entidadDerivacion: user.entidadDerivacion || "",
@@ -185,7 +185,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
         complementaryCourses: user.complementaryCourses || [],
         incomeMembers: user.incomeMembers || [],
       })
-      
+
       setComplementaryCourses(user.complementaryCourses || [])
       setIncomeMembers(user.incomeMembers || [])
     }
@@ -199,7 +199,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
   const mostrarEspecificacion = () => {
     const opcionesConEspecificacion = [
       "FPI_CICLO_GRADO_MEDIO",
-      "FPII_CICLO_GRADO_SUPERIOR", 
+      "FPII_CICLO_GRADO_SUPERIOR",
       "DIPLOMADO_ING_TECNICO",
       "LICENCIADO_ING_SUPERIOR",
       "OTROS"

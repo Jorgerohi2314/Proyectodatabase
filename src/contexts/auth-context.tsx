@@ -18,21 +18,12 @@ const VALID_CREDENTIALS = {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    // Verificar si ya está autenticado al cargar la página
-    const authStatus = localStorage.getItem('isAuthenticated')
-    if (authStatus === 'true') {
-      setIsAuthenticated(true)
-    } else {
-      // Si no está autenticado y no está en /login, redirigir
-      if (window.location.pathname !== '/login') {
-        router.push('/login')
-      }
-    }
-  }, [router])
+    // Login requirement removed
+  }, [])
 
   const login = (username: string, password: string): boolean => {
     if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
