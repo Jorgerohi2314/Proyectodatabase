@@ -62,7 +62,7 @@ export default function Home() {
           if (value) params.append(key, value as string)
         })
       }
-      
+
       const response = await fetch(`/api/users?${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -154,7 +154,7 @@ export default function Home() {
         },
         body: JSON.stringify(data),
       })
-      
+
       if (response.ok) {
         toast.success("Usuario creado correctamente")
         setShowCreateForm(false)
@@ -169,7 +169,7 @@ export default function Home() {
 
   const handleUpdateUser = async (data: any) => {
     if (!selectedUser) return
-    
+
     try {
       const response = await fetch(`/api/users/${selectedUser.id}`, {
         method: "PUT",
@@ -178,7 +178,7 @@ export default function Home() {
         },
         body: JSON.stringify(data),
       })
-      
+
       if (response.ok) {
         toast.success("Usuario actualizado correctamente")
         setShowEditForm(false)
@@ -198,88 +198,101 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardSimIcon className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" className="flex items-center gap-2">
-              <Link href="/stats">
-                <BarChart3 className="h-4 w-4" />
-                Estadísticas
-              </Link>
-            </Button>
-            <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Nuevo Usuario
-            </Button>
-            <Button onClick={logout} variant="outline" className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </Button>
-          </div>
+      <div className="min-h-screen w-full relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-3xl animate-blob"></div>
+          <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-pink-500/10 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
         </div>
 
-        <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Usuarios</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UserTable
-              users={users}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onDownloadPDF={handleDownloadPDF}
-              loading={loading}
-            />
-          </CardContent>
-        </Card>
-
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <UserForm
-                onSave={handleCreateUser}
-                onCancel={() => setShowCreateForm(false)}
-              />
+        <div className="container mx-auto p-6 space-y-8 relative z-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-linear-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg text-white">
+                <CardSimIcon className="h-6 w-6" />
+              </div>
+              <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-indigo-600 to-purple-600">
+                Gestión de Usuarios
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline" className="flex items-center gap-2">
+                <Link href="/stats">
+                  <BarChart3 className="h-4 w-4" />
+                  Estadísticas
+                </Link>
+              </Button>
+              <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 shadow-indigo-500/20">
+                <Plus className="h-4 w-4" />
+                Nuevo Usuario
+              </Button>
+              <Button onClick={logout} variant="ghost" className="flex items-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-50">
+                <LogOut className="h-4 w-4" />
+                Salir
+              </Button>
             </div>
           </div>
-        )}
 
-        {showEditForm && selectedUser && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <UserForm
-                key={selectedUser.id}
-                user={selectedUser}
-                onSave={handleUpdateUser}
-                onCancel={() => {
-                  setShowEditForm(false)
-                  setSelectedUser(null)
-                }}
-              />
-            </div>
-          </div>
-        )}
+          <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
 
-        {showViewForm && selectedUser && (
-          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-              <UserDetailView 
-                user={selectedUser} 
-                onClose={() => {
-                  setShowViewForm(false)
-                  setSelectedUser(null)
-                }} 
+          <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-xl text-slate-800">Lista de Usuarios</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UserTable
+                users={users}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleView}
+                onDownloadPDF={handleDownloadPDF}
+                loading={loading}
               />
+            </CardContent>
+          </Card>
+
+          {showCreateForm && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+                <UserForm
+                  onSave={handleCreateUser}
+                  onCancel={() => setShowCreateForm(false)}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {showEditForm && selectedUser && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+                <UserForm
+                  key={selectedUser.id}
+                  user={selectedUser}
+                  onSave={handleUpdateUser}
+                  onCancel={() => {
+                    setShowEditForm(false)
+                    setSelectedUser(null)
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {showViewForm && selectedUser && (
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+                <UserDetailView
+                  user={selectedUser}
+                  onClose={() => {
+                    setShowViewForm(false)
+                    setSelectedUser(null)
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </ProtectedRoute>
   )

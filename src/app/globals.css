@@ -44,73 +44,116 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: #FBFAF5;
-  --foreground: #100D08;
-  --card: #FFFFFF;
-  --card-foreground: #100D08;
-  --popover: #FFFFFF;
-  --popover-foreground: #100D08;
-  --primary: #818cf8;
-  --primary-foreground: #FFFFFF;
-  --secondary: #f472b6;
-  --secondary-foreground: #FFFFFF;
+  --radius: 1rem;
+
+  /* Vibrant & Cool Theme */
+  --background: #f8fafc;
+  /* Slate 50 - Cool Light Base */
+  --foreground: #0f172a;
+  /* Slate 900 - Deep Contrast Text */
+
+  --card: rgba(255, 255, 255, 0.7);
+  /* Glassy White */
+  --card-foreground: #1e293b;
+  /* Slate 800 */
+
+  --popover: rgba(255, 255, 255, 0.9);
+  --popover-foreground: #0f172a;
+
+  --primary: #6366f1;
+  /* Indigo 500 - Vibrant Primary */
+  --primary-foreground: #ffffff;
+
+  --secondary: #ec4899;
+  /* Pink 500 - Vibrant Secondary/Accent */
+  --secondary-foreground: #ffffff;
+
   --muted: #f1f5f9;
+  /* Slate 100 */
   --muted-foreground: #64748b;
-  --accent: #e2e8f0;
-  --accent-foreground: #100D08;
-  --destructive: #f87171;
-  --destructive-foreground: #FFFFFF;
+  /* Slate 500 */
+
+  --accent: #e0e7ff;
+  /* Indigo 100 - Gentle Accent */
+  --accent-foreground: #4338ca;
+  /* Indigo 700 */
+
+  --destructive: #ef4444;
+  /* Red 500 */
+  --destructive-foreground: #ffffff;
+
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  /* Slate 200 */
+  --input: #f1f5f9;
+  /* Slate 100 - Match muted for softer inputs */
   --ring: #818cf8;
-  --chart-1: #64748b;
-  --chart-2: #818cf8;
-  --chart-3: #f472b6;
-  --chart-4: #22c55e;
-  --chart-5: #eab308;
-  --sidebar: #FBFAF5;
-  --sidebar-foreground: #100D08;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #100D08;
-  --sidebar-border: #e2e8f0;
+  /* Indigo 400 */
+
+  --chart-1: #6366f1;
+  --chart-2: #ec4899;
+  --chart-3: #14b8a6;
+  /* Teal 500 */
+  --chart-4: #f59e0b;
+  /* Amber 500 */
+  --chart-5: #8b5cf6;
+  /* Violet 500 */
+
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #334155;
   --sidebar-ring: #818cf8;
 }
 
 .dark {
-  --background: #100D08;
-  --foreground: #FBFAF5;
-  --card: #1c1917;
-  --card-foreground: #FBFAF5;
-  --popover: #1c1917;
-  --popover-foreground: #FBFAF5;
+  --background: #020617;
+  /* Slaty, almost black */
+  --foreground: #f8fafc;
+
+  --card: rgba(15, 23, 42, 0.6);
+  /* Glassy Dark */
+  --card-foreground: #f8fafc;
+
+  --popover: rgba(15, 23, 42, 0.9);
+  --popover-foreground: #f8fafc;
+
   --primary: #818cf8;
-  --primary-foreground: #FFFFFF;
+  /* Indigo 400 */
+  --primary-foreground: #000000;
+
   --secondary: #f472b6;
-  --secondary-foreground: #FFFFFF;
+  /* Pink 400 */
+  --secondary-foreground: #000000;
+
   --muted: #1e293b;
   --muted-foreground: #94a3b8;
+
   --accent: #1e293b;
-  --accent-foreground: #FBFAF5;
-  --destructive: #f87171;
-  --destructive-foreground: #FFFFFF;
+  --accent-foreground: #e0e7ff;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
   --border: #334155;
-  --input: #334155;
-  --ring: #818cf8;
-  --chart-1: #94a3b8;
-  --chart-2: #818cf8;
-  --chart-3: #f472b6;
-  --chart-4: #22c55e;
-  --chart-5: #eab308;
-  --sidebar: #100D08;
-  --sidebar-foreground: #FBFAF5;
+  --input: #1e293b;
+  --ring: #6366f1;
+
+  --chart-1: #818cf8;
+  --chart-2: #f472b6;
+  --chart-3: #2dd4bf;
+  --chart-4: #fbbf24;
+  --chart-5: #a78bfa;
+
+  --sidebar: #020617;
+  --sidebar-foreground: #f8fafc;
   --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-primary-foreground: #000000;
   --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #FBFAF5;
-  --sidebar-border: #334155;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
   --sidebar-ring: #818cf8;
 }
 
@@ -118,37 +161,60 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    /* Add a subtle background mesh/gradient capable of being overlaid */
+    background-image:
+      radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+      radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+    /* This specific dark gradient fallback is useful, but we'll override for light mode */
   }
-  
-  /* Mejorar visibilidad de inputs */
-  input, textarea, select {
-    @apply border-2 border-border bg-input shadow-sm transition-all duration-200;
-    background-color: #fefefe;
+
+  /* Reset background for light mode to something brighter/custom */
+  :root:not(.dark) body {
+    background-image:
+      radial-gradient(at 40% 20%, hsla(28, 100%, 74%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(189, 100%, 56%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(340, 100%, 76%, 0.1) 0px, transparent 50%);
   }
-  
-  input:focus, textarea:focus, select:focus {
-    @apply border-primary ring-2 ring-primary/20;
-    background-color: white;
-    box-shadow: 0 0 0 3px rgba(51, 153, 102, 0.1);
+
+  /* Modern Input Styles */
+  input,
+  textarea,
+  select {
+    @apply border-2 border-transparent bg-muted/50 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-xl;
   }
-  
-  input:hover, textarea:hover, select:hover {
-    @apply border-primary/80;
-    background-color: white;
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply border-primary ring-4 ring-primary/10 bg-background;
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
   }
-  
-  /* Hacer labels más visibles */
-  label {
-    @apply text-foreground font-medium;
-    color: #374151;
+
+  input:hover,
+  textarea:hover,
+  select:hover {
+    @apply bg-muted/80;
   }
-  
-  /* Placeholder más visible */
-  input::placeholder, textarea::placeholder {
-    color: #9CA3AF;
+
+  /* Refined Placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-muted-foreground/60;
+  }
+}
+
+/* Custom Utilities for Glassmorphism */
+@layer utilities {
+  .glass {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/80 dark:hover:bg-slate-900/80 transition-all duration-300;
   }
 }
