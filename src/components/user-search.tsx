@@ -19,6 +19,7 @@ export interface SearchFilters {
   nombre?: string
   apellidos?: string
   formacionAcademica?: string
+  experienciaLaboralPrevia?: string
 }
 
 export function UserSearch({ onSearch, onClear }: UserSearchProps) {
@@ -94,7 +95,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1 block">Nombre</label>
             <Input
@@ -137,6 +138,15 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
                 <SelectItem value="OTROS">Otros</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1 block">Experiencia Laboral</label>
+            <Input
+              placeholder="Buscar experiencia..."
+              value={filters.experienciaLaboralPrevia || ""}
+              onChange={(e) => setFilters({ ...filters, experienciaLaboralPrevia: e.target.value })}
+              className="h-9"
+            />
           </div>
         </div>
 
