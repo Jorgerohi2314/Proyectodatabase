@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { X, Plus } from "lucide-react"
 import { UserProfile } from "@prisma/client"
+import { useToast } from "@/hooks/use-toast"
 
 const personalDataSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
@@ -110,6 +111,7 @@ interface UserFormProps {
 }
 
 export function UserForm({ user, onSave, onCancel }: UserFormProps) {
+  const { toast } = useToast()
   const [complementaryCourses, setComplementaryCourses] = useState<any[]>([])
   const [incomeMembers, setIncomeMembers] = useState<any[]>([])
 
@@ -246,6 +248,35 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     onSave(completeData)
   }
 
+  const onError = (errors: any) => {
+    const messages: string[] = []
+
+    const collectMessages = (obj: any) => {
+      Object.keys(obj).forEach((key) => {
+        if (obj[key]?.message) {
+          messages.push(obj[key].message)
+        } else if (typeof obj[key] === "object" && obj[key] !== null) {
+          collectMessages(obj[key])
+        }
+      })
+    }
+
+    collectMessages(errors)
+    const uniqueMessages = Array.from(new Set(messages))
+
+    toast({
+      variant: "destructive",
+      title: "Error de validación",
+      description: (
+        <ul className="list-disc pl-4 space-y-1">
+          {uniqueMessages.map((msg, idx) => (
+            <li key={idx}>{msg}</li>
+          ))}
+        </ul>
+      ),
+    })
+  }
+
   const addCourse = () => {
     const newCourse = {
       id: Date.now().toString(),
@@ -302,7 +333,7 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
         <Tabs defaultValue="personal" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="personal">Datos Personales</TabsTrigger>
