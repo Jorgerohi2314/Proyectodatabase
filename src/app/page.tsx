@@ -207,7 +207,7 @@ export default function Home() {
         </div>
 
         <div className="container mx-auto p-6 space-y-8 relative z-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white/40 backdrop-blur-md p-4 rounded-2xl border border-white/20 shadow-sm">
+          <div className="sticky top-4 z-40 flex flex-col md:flex-row items-center justify-between gap-4 bg-white/60 backdrop-blur-xl p-4 rounded-2xl border border-white/40 shadow-lg transition-all duration-300">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-linear-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg text-white">
                 <CardSimIcon className="h-6 w-6" />
@@ -217,7 +217,7 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="outline" className="flex items-center gap-2">
+              <Button asChild variant="outline" className="flex items-center gap-2 bg-white/50 border-white/50 hover:bg-white/80">
                 <Link href="/stats">
                   <BarChart3 className="h-4 w-4" />
                   Estadísticas
@@ -226,10 +226,6 @@ export default function Home() {
               <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2 shadow-indigo-500/20">
                 <Plus className="h-4 w-4" />
                 Nuevo Usuario
-              </Button>
-              <Button onClick={logout} variant="ghost" className="flex items-center gap-2 text-red-500 hover:text-red-600 hover:bg-red-50">
-                <LogOut className="h-4 w-4" />
-                Salir
               </Button>
             </div>
           </div>
@@ -253,8 +249,8 @@ export default function Home() {
           </Card>
 
           {showCreateForm && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+              <div className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/40 ring-1 ring-white/60">
                 <UserForm
                   onSave={handleCreateUser}
                   onCancel={() => setShowCreateForm(false)}
@@ -264,8 +260,8 @@ export default function Home() {
           )}
 
           {showEditForm && selectedUser && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+              <div className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/40 ring-1 ring-white/60">
                 <UserForm
                   key={selectedUser.id}
                   user={selectedUser}
@@ -280,8 +276,8 @@ export default function Home() {
           )}
 
           {showViewForm && selectedUser && (
-            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-              <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-white/20">
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+              <div className="bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-white/40 ring-1 ring-white/60">
                 <UserDetailView
                   user={selectedUser}
                   onClose={() => {
