@@ -31,11 +31,22 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
   const sortedUsers = useMemo(() => {
     let sortableUsers = [...users]
     if (sortConfig !== null) {
-      sortableUsers.sort((a, b) => { // @ts-ignore
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+      sortableUsers.sort((a, b) => {
+        const aValue = a[sortConfig.key]
+        const bValue = b[sortConfig.key]
+
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue)
+        }
+
+        // Fallback for non-string values
+        // @ts-ignore
+        if (aValue < bValue) {
           return sortConfig.direction === 'asc' ? -1 : 1
         } // @ts-ignore
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aValue > bValue) {
           return sortConfig.direction === 'asc' ? 1 : -1
         }
         return 0
