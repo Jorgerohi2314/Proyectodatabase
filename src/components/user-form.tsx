@@ -18,23 +18,23 @@ import { UserProfile } from "@prisma/client"
 import { useToast } from "@/hooks/use-toast"
 
 const personalDataSchema = z.object({
-  nombre: z.string().min(1, "El nombre es requerido"),
-  apellidos: z.string().min(1, "Los apellidos son requeridos"),
-  fechaNacimiento: z.string().min(1, "La fecha de nacimiento es requerida"),
-  nacionalidad: z.string().min(1, "La nacionalidad es requerida"),
-  documentoIdentidad: z.string().min(1, "El documento de identidad es requerido"),
+  nombre: z.string().min(1, "El nombre es obligatorio"),
+  apellidos: z.string().min(1, "Los apellidos son obligatorios"),
+  fechaNacimiento: z.string().min(1, "La fecha de nacimiento es obligatoria"),
+  nacionalidad: z.string().min(1, "La nacionalidad es obligatoria"),
+  documentoIdentidad: z.string().min(1, "El documento de identidad es obligatorio"),
   numeroSeguridadSocial: z.string().optional(),
-  sexo: z.enum(["HOMBRE", "MUJER"]).default("HOMBRE"),
-  direccion: z.string().min(1, "La dirección es requerida"),
-  localidad: z.string().min(1, "La localidad es requerida"),
+  sexo: z.enum(["HOMBRE", "MUJER"], { required_error: "El sexo es obligatorio" }).default("HOMBRE"),
+  direccion: z.string().min(1, "La dirección es obligatoria"),
+  localidad: z.string().min(1, "La localidad es obligatoria"),
   codigoPostal: z.string().optional(),
   telefono1: z.string().optional(),
   telefono2: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  email: z.union([z.literal(""), z.string().email("El formato del email no es válido")]),
   carnetConducir: z.enum(["SI", "NO"]).default("NO"),
   vehiculoPropio: z.enum(["SI", "NO"]).default("NO"),
   tieneDiscapacidad: z.enum(["SI", "NO"]).default("NO"),
-  porcentajeDiscapacidad: z.number().optional(),
+  porcentajeDiscapacidad: z.number({ invalid_type_error: "El porcentaje debe ser un número" }).optional(),
   tipoDiscapacidad: z.string().optional(),
   entidadDerivacion: z.string().optional(),
   tecnicoDerivacion: z.string().optional(),
@@ -53,7 +53,7 @@ const educationDataSchema = z.object({
     "BACHILLER", "FPI_CICLO_GRADO_MEDIO", "FPII_CICLO_GRADO_SUPERIOR",
     "DIPLOMADO_ING_TECNICO", "LICENCIADO_ING_SUPERIOR", "OTROS"
   ]).default("SIN_ESTUDIOS"),
-  anioFinalizacion: z.number().optional(),
+  anioFinalizacion: z.number({ invalid_type_error: "El año debe ser un número" }).optional(),
   especificacionOtros: z.string().optional(),
   experienciaLaboralPrevia: z.string().optional(),
 })
@@ -65,16 +65,16 @@ const insercionSchema = z.object({
 })
 
 const courseSchema = z.object({
-  nombreCurso: z.string().min(1, "El nombre del curso es requerido"),
-  duracionHoras: z.number().min(1, "La duración es requerida"),
-  entidad: z.string().min(1, "La entidad es requerida"),
-  fechaRealizacion: z.string().min(1, "La fecha es requerida"),
+  nombreCurso: z.string().min(1, "El nombre del curso es obligatorio"),
+  duracionHoras: z.number({ invalid_type_error: "La duración debe ser un número" }).min(1, "La duración es obligatoria"),
+  entidad: z.string().min(1, "La entidad es obligatoria"),
+  fechaRealizacion: z.string().min(1, "La fecha es obligatoria"),
 })
 
 const incomeMemberSchema = z.object({
-  numero: z.number().min(1, "El número es requerido"),
-  tipo: z.string().min(1, "El tipo es requerido"),
-  cantidad: z.number().min(0, "La cantidad es requerida"),
+  numero: z.number({ invalid_type_error: "El número debe ser un valor numérico" }).min(1, "El número es obligatorio"),
+  tipo: z.string().min(1, "El tipo es obligatorio"),
+  cantidad: z.number({ invalid_type_error: "La cantidad debe ser un valor numérico" }).min(0, "La cantidad es obligatoria"),
 })
 
 const fullSchema = z.object({

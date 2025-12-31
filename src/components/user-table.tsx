@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import {
   Table,
   TableBody,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Trash2, Download, Eye } from "lucide-react"
+import { Edit, Trash2, Download, Eye, ArrowUpDown } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { calcularEdad } from "@/lib/utils/edad"
 import { LoadingSpinner } from "./loading-spinner"
@@ -25,6 +26,32 @@ interface UserTableProps {
 }
 
 export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, loading = false }: UserTableProps) {
+  const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' } | null>(null)
+
+  const sortedUsers = useMemo(() => {
+    let sortableUsers = [...users]
+    if (sortConfig !== null) {
+      sortableUsers.sort((a, b) => { // @ts-ignore
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        } // @ts-ignore
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+    return sortableUsers
+  }, [users, sortConfig])
+
+  const requestSort = (key: keyof UserProfile) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -52,7 +79,16 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nombre</TableHead>
+            <TableHead>
+              <Button
+                variant="ghost"
+                onClick={() => requestSort('nombre')}
+                className="flex items-center gap-1 p-0 hover:bg-transparent font-semibold"
+              >
+                Nombre
+                <ArrowUpDown className="h-4 w-4" />
+              </Button>
+            </TableHead>
             <TableHead>Apellidos</TableHead>
             <TableHead>Edad</TableHead>
             <TableHead>Localidad</TableHead>
@@ -63,7 +99,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user) => (
+          {sortedUsers.map((user) => (
             <TableRow key={user.id} className="hover:bg-gray-50">
               <TableCell className="font-medium">{user.nombre}</TableCell>
               <TableCell>{user.apellidos}</TableCell>
