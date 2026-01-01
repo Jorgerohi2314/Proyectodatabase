@@ -141,6 +141,19 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
     },
   })
 
+  // Helper functions for normalization
+  const normalizeYesNo = (val: any): "SI" | "NO" => {
+    if (val === true || val === "true" || val === 1 || val === "SI" || val === "si") return "SI"
+    return "NO"
+  }
+
+  const normalizeGender = (val: any): "HOMBRE" | "MUJER" => {
+    if (!val) return "HOMBRE"
+    const normalized = String(val).toUpperCase()
+    if (normalized === "MUJER" || normalized === "FEMALE" || normalized === "F") return "MUJER"
+    return "HOMBRE"
+  }
+
   useEffect(() => {
     if (user) {
       // Cargar datos del usuario cuando se está editando
@@ -152,16 +165,16 @@ export function UserForm({ user, onSave, onCancel }: UserFormProps) {
           nacionalidad: user.nacionalidad || "",
           documentoIdentidad: user.documentoIdentidad || "",
           numeroSeguridadSocial: (user as any).numeroSeguridadSocial || "",
-          sexo: (["HOMBRE", "MUJER"].includes(user.sexo as string)) ? user.sexo as "HOMBRE" | "MUJER" : "HOMBRE",
+          sexo: normalizeGender(user.sexo),
           direccion: user.direccion || "",
           localidad: user.localidad || "",
           codigoPostal: user.codigoPostal || "",
           telefono1: user.telefono1 || "",
           telefono2: user.telefono2 || "",
           email: user.email || "",
-          carnetConducir: (["SI", "NO"].includes(user.carnetConducir as string)) ? user.carnetConducir as "SI" | "NO" : "NO",
-          vehiculoPropio: (["SI", "NO"].includes(user.vehiculoPropio as string)) ? user.vehiculoPropio as "SI" | "NO" : "NO",
-          tieneDiscapacidad: (["SI", "NO"].includes(user.tieneDiscapacidad as string)) ? user.tieneDiscapacidad as "SI" | "NO" : "NO",
+          carnetConducir: normalizeYesNo(user.carnetConducir),
+          vehiculoPropio: normalizeYesNo(user.vehiculoPropio),
+          tieneDiscapacidad: normalizeYesNo(user.tieneDiscapacidad),
           porcentajeDiscapacidad: user.porcentajeDiscapacidad || 0,
           tipoDiscapacidad: user.tipoDiscapacidad || "",
           entidadDerivacion: user.entidadDerivacion || "",
