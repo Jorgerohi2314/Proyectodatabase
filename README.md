@@ -1,141 +1,94 @@
-# 🚀 Welcome to Z.ai Code Scaffold
+# Project Database
 
-A modern, production-ready web application scaffold powered by cutting-edge technologies, designed to accelerate your development with [Z.ai](https://chat.z.ai)'s AI-powered coding assistance.
+A web application for managing user profiles, training records, and socio-economic details with authentication, search, PDF export, and analytics support.
 
-## ✨ Technology Stack
+## What this app does
 
-This scaffold provides a robust foundation built with:
+This project is a full-stack Next.js application that provides a protected user dashboard for:
 
-### 🎯 Core Framework
-- **⚡ Next.js 15** - The React framework for production with App Router
-- **📘 TypeScript 5** - Type-safe JavaScript for better developer experience
-- **🎨 Tailwind CSS 4** - Utility-first CSS framework for rapid UI development
+- Creating, editing, viewing, and deleting user profiles
+- Storing personal, contact, and identity details
+- Managing related socio-economic and education data
+- Searching users by name, last name, academic background, and work experience
+- Downloading a user profile as a PDF report
+- Displaying a secure login page with protected routes
+- Supporting database access via Prisma and API routes
 
-### 🧩 UI Components & Styling
-- **🧩 shadcn/ui** - High-quality, accessible components built on Radix UI
-- **🎯 Lucide React** - Beautiful & consistent icon library
-- **🌈 Framer Motion** - Production-ready motion library for React
-- **🎨 Next Themes** - Perfect dark mode in 2 lines of code
+## Main features
 
-### 📋 Forms & Validation
-- **🎣 React Hook Form** - Performant forms with easy validation
-- **✅ Zod** - TypeScript-first schema validation
+- Authenticated access with a login screen and protected application pages
+- User profile management with a complete CRUD experience
+- Search and filters for flexible user lookup
+- User details view with nested related records
+- PDF generation for individual user records
+- Backend API routes for user operations and PDF export
+- Prisma ORM with a PostgreSQL/SQLite-compatible data layer
+- TypeScript-based frontend and backend
+- Example socket and stats integrations in the repository
 
-### 🔄 State Management & Data Fetching
-- **🐻 Zustand** - Simple, scalable state management
-- **🔄 TanStack Query** - Powerful data synchronization for React
-- **🌐 Axios** - Promise-based HTTP client
+## Technology stack
 
-### 🗄️ Database & Backend
-- **🗄️ Prisma** - Next-generation Node.js and TypeScript ORM
-- **🔐 NextAuth.js** - Complete open-source authentication solution
+- Next.js 15
+- TypeScript
+- Tailwind CSS
+- Prisma ORM
+- React Hook Form
+- Zod validation
+- shadcn/ui components
+- Zustand state management
+- Sonner toast notifications
+- Lucide icons
+- Recharts charts
+- Socket.io for realtime examples
+- jsPDF / html2canvas for PDF downloads
 
-### 🎨 Advanced UI Features
-- **📊 TanStack Table** - Headless UI for building tables and datagrids
-- **🖱️ DND Kit** - Modern drag and drop toolkit for React
-- **📊 Recharts** - Redefined chart library built with React and D3
-- **🖼️ Sharp** - High performance image processing
-
-### 🌍 Internationalization & Utilities
-- **🌍 Next Intl** - Internationalization library for Next.js
-- **📅 Date-fns** - Modern JavaScript date utility library
-- **🪝 ReactUse** - Collection of essential React hooks for modern development
-
-## 🎯 Why This Scaffold?
-
-- **🏎️ Fast Development** - Pre-configured tooling and best practices
-- **🎨 Beautiful UI** - Complete shadcn/ui component library with advanced interactions
-- **🔒 Type Safety** - Full TypeScript configuration with Zod validation
-- **📱 Responsive** - Mobile-first design principles with smooth animations
-- **🗄️ Database Ready** - Prisma ORM configured for rapid backend development
-- **🔐 Auth Included** - NextAuth.js for secure authentication flows
-- **📊 Data Visualization** - Charts, tables, and drag-and-drop functionality
-- **🌍 i18n Ready** - Multi-language support with Next Intl
-- **🚀 Production Ready** - Optimized build and deployment settings
-- **🤖 AI-Friendly** - Structured codebase perfect for AI assistance
-
-## 🚀 Quick Start
+## Quick start
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see your application running.
+Then open [http://localhost:3000](http://localhost:3000).
 
-## 🤖 Powered by Z.ai
+## Project structure
 
-This scaffold is optimized for use with [Z.ai](https://chat.z.ai) - your AI assistant for:
+- `src/app/` — Next.js app router pages and API route entry points
+- `src/components/` — Reusable UI components and feature modules
+- `src/contexts/` — Authentication and application contexts
+- `src/hooks/` — Custom React hooks
+- `src/lib/` — Database and utility helpers
+- `prisma/` — Prisma schema and migration history
+- `public/` — Static assets
 
-- **💻 Code Generation** - Generate components, pages, and features instantly
-- **🎨 UI Development** - Create beautiful interfaces with AI assistance  
-- **🔧 Bug Fixing** - Identify and resolve issues with intelligent suggestions
-- **📝 Documentation** - Auto-generate comprehensive documentation
-- **🚀 Optimization** - Performance improvements and best practices
+## Relevant pages
 
-Ready to build something amazing? Start chatting with Z.ai at [chat.z.ai](https://chat.z.ai) and experience the future of AI-powered development!
+- `/login` — Login screen for authenticated access
+- `/` — Protected dashboard with user list, search, and profile actions
+- `/stats` — Analytics and statistics views
+- `/api/users` — REST API for listing and creating users
+- `/api/users/[id]` — REST API for retrieving, updating, and deleting users
+- `/api/users/[id]/pdf` — Endpoint for exporting a user profile to PDF
 
-## 📁 Project Structure
+## Development commands
 
+```bash
+npm run dev        # start development server
+npm run build      # build the production app
+npm start          # run production server
+npm run lint       # run ESLint checks
+npm run db:push    # push Prisma schema to the database
+npm run db:generate # generate Prisma client
+npm run db:migrate # run migrations
+npm run db:reset   # reset database migrations and data
 ```
-src/
-├── app/                 # Next.js App Router pages
-├── components/          # Reusable React components
-│   └── ui/             # shadcn/ui components
-├── hooks/              # Custom React hooks
-└── lib/                # Utility functions and configurations
-```
 
-## 🎨 Available Features & Components
+## Notes
 
-This scaffold includes a comprehensive set of modern web development tools:
-
-### 🧩 UI Components (shadcn/ui)
-- **Layout**: Card, Separator, Aspect Ratio, Resizable Panels
-- **Forms**: Input, Textarea, Select, Checkbox, Radio Group, Switch
-- **Feedback**: Alert, Toast (Sonner), Progress, Skeleton
-- **Navigation**: Breadcrumb, Menubar, Navigation Menu, Pagination
-- **Overlay**: Dialog, Sheet, Popover, Tooltip, Hover Card
-- **Data Display**: Badge, Avatar, Calendar
-
-### 📊 Advanced Data Features
-- **Tables**: Powerful data tables with sorting, filtering, pagination (TanStack Table)
-- **Charts**: Beautiful visualizations with Recharts
-- **Forms**: Type-safe forms with React Hook Form + Zod validation
-
-### 🎨 Interactive Features
-- **Animations**: Smooth micro-interactions with Framer Motion
-- **Drag & Drop**: Modern drag-and-drop functionality with DND Kit
-- **Theme Switching**: Built-in dark/light mode support
-
-### 🔐 Backend Integration
-- **Authentication**: Ready-to-use auth flows with NextAuth.js
-- **Database**: Type-safe database operations with Prisma
-- **API Client**: HTTP requests with Axios + TanStack Query
-- **State Management**: Simple and scalable with Zustand
-
-### 🌍 Production Features
-- **Internationalization**: Multi-language support with Next Intl
-- **Image Optimization**: Automatic image processing with Sharp
-- **Type Safety**: End-to-end TypeScript with Zod validation
-- **Essential Hooks**: 100+ useful React hooks with ReactUse for common patterns
-
-## 🤝 Get Started with Z.ai
-
-1. **Clone this scaffold** to jumpstart your project
-2. **Visit [chat.z.ai](https://chat.z.ai)** to access your AI coding assistant
-3. **Start building** with intelligent code generation and assistance
-4. **Deploy with confidence** using the production-ready setup
+- User authentication is implemented in the repository and protects the main dashboard.
+- Customer and training records are stored through Prisma models and API routes.
+- The login page currently uses in-code credentials.
+- The app includes UI components for responsive and accessible forms, tables, and dialogs.
 
 ---
 
-Built with ❤️ for the developer community. Supercharged by [Z.ai](https://chat.z.ai) 🚀
