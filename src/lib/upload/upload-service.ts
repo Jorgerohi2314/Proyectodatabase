@@ -242,7 +242,7 @@ function getStorageConfig(): StorageConfig {
         provider: 'local',
         local: {
           // Reemplazo crítico: Se ancla la ruta absoluta para evitar EACCES en contenedores
-          uploadDir: process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads', 'curriculum'),
+          uploadDir: process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads'),
           publicBaseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         },
       };

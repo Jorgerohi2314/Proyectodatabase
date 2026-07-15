@@ -27,10 +27,13 @@ const Header: React.FC<HeaderProps> = ({ onCreateUser }) => {
     <header className="grid grid-cols-3 items-center p-4 bg-white dark:bg-gray-800 shadow-md">
       
       {/* Columna Izquierda: Texto ampliado con fuente aplicada */}
-      <div className="justify-self-start">
+      <div className="justify-self-start flex flex-col">
          <h1 className="text-4xl font-bold text-gray-800 dark:text-white font-queering">
            Hola, Mila
          </h1>
+         <span className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
+           v2.0.2
+         </span>
       </div>
 
       {/* Columna Central: Reloj centrado con fuente aplicada */}
