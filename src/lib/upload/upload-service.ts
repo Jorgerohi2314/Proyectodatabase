@@ -6,6 +6,8 @@
 import { db } from '@/lib/db';
 import { validateDocument, FileValidationResult, generateSafeFilename } from './validation';
 import { createStorageAdapter, StorageAdapter, UploadResult, StorageConfig } from './storage';
+import path from 'path';
+import { promises as fs } from 'fs';
 
 export interface CurriculumUploadResult {
   success: boolean;
@@ -68,9 +70,16 @@ export class CurriculumUploadService {
     // 4. Generar nombre seguro
     const safeFilename = generateSafeFilename(file.name, userId);
 
-    // 5. Subir a almacenamiento
+    // 5. Asegurar estructura de directorios absoluta y Subir a almacenamiento
     let uploadResult: UploadResult;
     try {
+      // Comprobar si usamos almacenamiento local para forzar la creación de la carpeta
+      const provider = process.env.STORAGE_PROVIDER || 'local';
+      if (provider === 'local') {
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'curriculum');
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
+
       uploadResult = await this.storage.upload(buffer, safeFilename, validation.mimeType!);
     } catch (error) {
       console.error('Error subiendo archivo:', error);
@@ -165,7 +174,7 @@ export class CurriculumUploadService {
       url = await this.storage.getSignedUrl(user.curriculum, 3600);
     } else {
       // Local storage - URL ya es pública
-      url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uploads/${user.curriculum}`;
+      url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uploads/curriculum/${user.curriculum.split('/').pop()}`;
     }
 
     return {
@@ -194,7 +203,7 @@ export class CurriculumUploadService {
     }
 
     // Local storage
-    return `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uploads/${user.curriculum}`;
+    return `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/uploads/curriculum/${user.curriculum.split('/').pop()}`;
   }
 }
 
@@ -232,7 +241,8 @@ function getStorageConfig(): StorageConfig {
       return {
         provider: 'local',
         local: {
-          uploadDir: process.env.UPLOAD_DIR || './public/uploads',
+          // Reemplazo crítico: Se ancla la ruta absoluta para evitar EACCES en contenedores
+          uploadDir: process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads', 'curriculum'),
           publicBaseUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
         },
       };

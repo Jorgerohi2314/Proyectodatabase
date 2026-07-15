@@ -20,6 +20,7 @@ export const maxDuration = 30; // Segundos para subidas grandes
  * Sube un documento Word como curriculum del usuario
  */
 export async function POST(
+
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
