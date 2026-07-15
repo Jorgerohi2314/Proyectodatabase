@@ -1,0 +1,15 @@
+services:
+  db_gestion:
+    image: postgres:15-alpine
+    container_name: db_gestion_temp
+    environment:
+      POSTGRES_USER: usuario_db
+      POSTGRES_PASSWORD: "141414"
+      POSTGRES_DB: gestion_clientes
+    ports:
+      - "5433:5432" # Uso el puerto 5433 para no colisionar con otros servicios locales
+    volumes:
+      - db_data_temp:/var/lib/postgresql/data
+
+volumes:
+  db_data_temp:

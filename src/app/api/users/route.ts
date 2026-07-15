@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         nombre: data.nombre,
         apellidos: data.apellidos,
+        source: data.source,
         fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : new Date(),
         nacionalidad: data.nacionalidad,
         documentoIdentidad: data.documentoIdentidad,
@@ -119,6 +120,21 @@ export async function POST(request: NextRequest) {
             experienciaLaboralPrevia: data.educationData.experienciaLaboralPrevia,
           }
         } : undefined,
+        complementaryCourses: {
+          create: data.complementaryCourses?.map((course: any) => ({
+            nombreCurso: course.nombreCurso,
+            duracionHoras: course.duracionHoras,
+            entidad: course.entidad,
+            fechaRealizacion: new Date(course.fechaRealizacion),
+          })) || [],
+        },
+        incomeMembers: {
+          create: data.incomeMembers?.map((member: any) => ({
+            numero: member.numero,
+            tipo: member.tipo,
+            cantidad: member.cantidad,
+          })) || [],
+        },
       },
       include: {
         socioEconomicData: true,

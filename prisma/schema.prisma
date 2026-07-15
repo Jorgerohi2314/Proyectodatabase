@@ -37,6 +37,11 @@ enum YesNo {
   NO
 }
 
+enum UserSource {
+  PROPIO
+  DERIVADO
+}
+
 model UserProfile {
   id                       String   @id @default(cuid())
   createdAt                DateTime @default(now())
@@ -45,6 +50,7 @@ model UserProfile {
   // Datos personales
   nombre                   String
   apellidos                String?
+  source                   UserSource @default(PROPIO)
   fechaNacimiento          DateTime?
   nacionalidad             String?
   documentoIdentidad       String?
@@ -72,11 +78,16 @@ model UserProfile {
   sector                   String?
   empresa                  String?
 
+  // Curriculum (documento Word .doc/.docx)
+  // Nullable por defecto para preservar integridad de datos existentes
+  curriculum               String?
+
   // Relaciones
   socioEconomicData        SocioEconomicData?
   educationData            EducationData?
   complementaryCourses     ComplementaryCourse[]
   incomeMembers            IncomeMember[]
+  diaryEntries             DiaryEntry[]
 
   @@map("user_profiles")
 }
@@ -141,4 +152,15 @@ model IncomeMember {
   userProfile              UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
 
   @@map("income_members")
+}
+
+model DiaryEntry {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  content   String
+
+  userProfileId String
+  userProfile   UserProfile @relation(fields: [userProfileId], references: [id], onDelete: Cascade)
+
+  @@map("diary_entries")
 }

@@ -6,7 +6,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const sector = searchParams.get('sector') || undefined
 
-    const whereBase: any = { insertado: 'SI' }
+    const whereBase: any = { 
+      insertado: 'SI',
+      source: 'PROPIO'
+    }
     if (sector && sector !== 'TODOS') {
       whereBase.sector = sector
     }

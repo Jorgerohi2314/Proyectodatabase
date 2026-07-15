@@ -1,12 +1,21 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { useToast } from "@/hooks/use-toast"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
+
+interface DiaryEntry {
+  id: string;
+  createdAt: string;
+  content: string;
+}
 
 interface UserDetailViewProps {
   user: any
@@ -14,6 +23,73 @@ interface UserDetailViewProps {
 }
 
 export function UserDetailView({ user, onClose }: UserDetailViewProps) {
+  const { toast } = useToast();
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+  const [newEntryContent, setNewEntryContent] = useState("");
+  const [isLoadingEntries, setIsLoadingEntries] = useState(true);
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
+
+  useEffect(() => {
+    async function fetchDiaryEntries() {
+      if (!user?.id) return;
+      setIsLoadingEntries(true);
+      try {
+        const response = await fetch(`/api/users/${user.id}/diary`);
+        if (!response.ok) {
+          throw new Error("No se pudieron cargar las entradas del diario.");
+        }
+        const entries = await response.json();
+        setDiaryEntries(entries);
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message,
+        });
+      } finally {
+        setIsLoadingEntries(false);
+      }
+    }
+    fetchDiaryEntries();
+  }, [user?.id, toast]);
+
+  const handleSaveNewEntry = async () => {
+    if (!newEntryContent.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "La entrada del diario no puede estar vacía.",
+      });
+      return;
+    }
+    setIsSavingEntry(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}/diary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newEntryContent }),
+      });
+      if (!response.ok) {
+        throw new Error("No se pudo guardar la entrada.");
+      }
+      const newEntry = await response.json();
+      setDiaryEntries([newEntry, ...diaryEntries]);
+      setNewEntryContent("");
+      toast({
+        title: "Éxito",
+        description: "Nueva entrada del diario guardada.",
+      });
+    } catch (error: any) {
+       toast({
+        variant: "destructive",
+        title: "Error al guardar",
+        description: error.message,
+      });
+    } finally {
+      setIsSavingEntry(false);
+    }
+  };
+  
   const formatFecha = (fecha: string | Date) => {
     return new Date(fecha).toLocaleDateString('es-ES', {
       day: '2-digit',
@@ -43,7 +119,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       </div>
 
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="personal" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Datos Personales
@@ -55,6 +131,10 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
           <TabsTrigger value="education" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Formativos
+          </TabsTrigger>
+          <TabsTrigger value="diary" className="flex items-center gap-2">
+            <BookText className="h-4 w-4" />
+            Diario
           </TabsTrigger>
         </TabsList>
 
@@ -212,6 +292,23 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                           <p className="font-medium">{user.colectivo}</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {user.curriculum && (
+                <>
+                  <Separator />
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="text-sm text-gray-600">Currículum</p>
+                      <Button asChild variant="link" className="p-0 h-auto">
+                        <a href={user.curriculum} target="_blank" rel="noopener noreferrer">
+                          Descargar Currículum
+                        </a>
+                      </Button>
                     </div>
                   </div>
                 </>
@@ -380,6 +477,44 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+        <TabsContent value="diary">
+          <Card>
+            <CardHeader>
+              <CardTitle>Diario de Seguimiento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Escribe una nueva entrada en el diario..."
+                  rows={4}
+                  value={newEntryContent}
+                  onChange={(e) => setNewEntryContent(e.target.value)}
+                />
+                 <Button onClick={handleSaveNewEntry} disabled={isSavingEntry}>
+                  {isSavingEntry ? "Guardando..." : "Guardar Entrada"}
+                </Button>
+              </div>
+              <Separator />
+              <div className="space-y-4">
+                <h4 className="font-semibold">Historial de Entradas</h4>
+                {isLoadingEntries ? (
+                  <p>Cargando diario...</p>
+                ) : diaryEntries.length > 0 ? (
+                  <ul className="space-y-4">
+                    {diaryEntries.map((entry) => (
+                      <li key={entry.id} className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-500">{formatFecha(entry.createdAt)}</p>
+                        <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No hay entradas en el diario.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

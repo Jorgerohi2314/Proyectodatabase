@@ -1,0 +1,105 @@
+.scroll-list-container {
+  position: relative;
+  width: 100%; /* Ocupar todo el ancho disponible */
+}
+
+.scroll-list {
+  max-height: 60vh; /* Altura máxima relativa a la ventana */
+  overflow-y: auto;
+  padding: 8px; /* Reducir padding para más espacio */
+}
+
+/* Estilos de la barra de scroll */
+.scroll-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scroll-list::-webkit-scrollbar-track {
+  background: transparent; /* Fondo transparente */
+}
+
+.scroll-list::-webkit-scrollbar-thumb {
+  background: #4a4a4a; /* Un gris oscuro más visible */
+  border-radius: 4px;
+}
+
+.scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #6a6a6a; /* Color al pasar el ratón */
+}
+
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Estilo de cada item en la lista */
+.item {
+  padding: 16px;
+  background-color: var(--card-bg, #ffffff); /* Color de fondo adaptable */
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color, #e2e8f0); /* Borde sutil */
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.item.selected {
+  background-color: var(--accent-bg, #f1f5f9); /* Color de fondo para el item seleccionado */
+  transform: scale(1.02); /* Efecto de zoom sutil */
+  box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.05);
+}
+
+.item-text {
+  color: var(--text-color, #1a202c); /* Color de texto adaptable */
+  margin: 0;
+}
+
+/* Gradientes para el efecto de "fade" en los bordes */
+.top-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: linear-gradient(to bottom, var(--main-bg, #ffffff), transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.bottom-gradient {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, var(--main-bg, #ffffff), transparent);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Para tema oscuro (si lo hubiera) */
+.dark .item {
+    --card-bg: #1f2937;
+    --border-color: #374151;
+    --text-color: #f9fafb;
+}
+
+.dark .item.selected {
+    --accent-bg: #374151;
+}
+
+.dark .top-gradient, .dark .bottom-gradient {
+    --main-bg: #111827; /* Color de fondo principal del tema oscuro */
+}
+
+.dark .scroll-list::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark .scroll-list::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
