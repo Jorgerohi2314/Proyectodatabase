@@ -8,10 +8,10 @@ import { z } from 'zod'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: userId } = params;
+    const { id: userId } = await params;
 
     const diaryEntries = await db.diaryEntry.findMany({
       where: { userProfileId: userId },
@@ -30,6 +30,7 @@ export async function GET(
 
 const createDiaryEntrySchema = z.object({
   content: z.string().min(1, 'El contenido de la entrada no puede estar vacío.'),
+  date: z.string().optional().transform(val => val ? new Date(val) : new Date()),
 });
 
 /**
@@ -38,10 +39,10 @@ const createDiaryEntrySchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: userId } = params;
+    const { id: userId } = await params;
     const body = await request.json();
 
     const validation = createDiaryEntrySchema.safeParse(body);
@@ -53,11 +54,12 @@ export async function POST(
       );
     }
 
-    const { content } = validation.data;
+    const { content, date } = validation.data;
 
     const newEntry = await db.diaryEntry.create({
       data: {
         content,
+        date,
         userProfileId: userId,
       },
     });

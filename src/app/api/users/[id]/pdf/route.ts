@@ -62,11 +62,12 @@ function addSubTitle(pdf: jsPDF, title: string, yPosition: number): number {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const user = await db.userProfile.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         socioEconomicData: true,
         educationData: true,

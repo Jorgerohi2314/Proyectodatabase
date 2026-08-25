@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
         insertado: data.insertado ?? 'NO',
         sector: data.sector,
         empresa: data.empresa,
+        localidadInsercion: data.localidadInsercion,
         socioEconomicData: data.socioEconomicData ? {
           create: {
             composicionFamiliar: data.socioEconomicData.composicionFamiliar,

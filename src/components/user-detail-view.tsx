@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
@@ -14,6 +15,7 @@ import { calcularEdad } from "@/lib/utils/edad"
 interface DiaryEntry {
   id: string;
   createdAt: string;
+  date: string;
   content: string;
 }
 
@@ -26,6 +28,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const { toast } = useToast();
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [newEntryContent, setNewEntryContent] = useState("");
+  const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
 
@@ -67,7 +70,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       const response = await fetch(`/api/users/${user.id}/diary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newEntryContent }),
+        body: JSON.stringify({ content: newEntryContent, date: newEntryDate }),
       });
       if (!response.ok) {
         throw new Error("No se pudo guardar la entrada.");
@@ -75,6 +78,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       const newEntry = await response.json();
       setDiaryEntries([newEntry, ...diaryEntries]);
       setNewEntryContent("");
+      setNewEntryDate(new Date().toISOString().split('T')[0]);
       toast({
         title: "Éxito",
         description: "Nueva entrada del diario guardada.",
@@ -485,12 +489,27 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Textarea
-                  placeholder="Escribe una nueva entrada en el diario..."
-                  rows={4}
-                  value={newEntryContent}
-                  onChange={(e) => setNewEntryContent(e.target.value)}
-                />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="Escribe una nueva entrada en el diario..."
+                      rows={4}
+                      value={newEntryContent}
+                      onChange={(e) => setNewEntryContent(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <div className="space-y-2 w-48">
+                      <label className="text-sm font-medium text-gray-700">Fecha de la entrada</label>
+                      <Input
+                        type="date"
+                        value={newEntryDate}
+                        onChange={(e) => setNewEntryDate(e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                  </div>
+                </div>
                  <Button onClick={handleSaveNewEntry} disabled={isSavingEntry}>
                   {isSavingEntry ? "Guardando..." : "Guardar Entrada"}
                 </Button>
@@ -504,7 +523,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   <ul className="space-y-4">
                     {diaryEntries.map((entry) => (
                       <li key={entry.id} className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-500">{formatFecha(entry.createdAt)}</p>
+                        <p className="text-sm text-gray-500">{formatFecha(entry.date)}</p>
                         <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
                       </li>
                     ))}

@@ -80,6 +80,7 @@ export async function PUT(
           insertado: data.insertado ?? 'NO',
           sector: data.sector,
           empresa: data.empresa,
+          localidadInsercion: data.localidadInsercion,
           socioEconomicData: data.socioEconomicData ? {
             upsert: {
               create: {

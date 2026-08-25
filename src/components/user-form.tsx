@@ -63,6 +63,7 @@ const insercionSchema = z.object({
   insertado: z.enum(["SI", "NO"]).default("NO"),
   sector: z.string().optional(),
   empresa: z.string().optional(),
+  localidadInsercion: z.string().optional(),
 })
 
 const courseSchema = z.object({
@@ -136,7 +137,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
         especificacionOtros: "",
         experienciaLaboralPrevia: "",
       },
-      insercion: { insertado: "NO", sector: undefined, empresa: "" },
+      insercion: { insertado: "NO", sector: undefined, empresa: "", localidadInsercion: "" },
       complementaryCourses: [],
       incomeMembers: [],
     },
@@ -215,6 +216,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           insertado: ((user as any).insertado as "SI" | "NO") || "NO",
           sector: (user as any).sector ?? undefined,
           empresa: (user as any).empresa || "",
+          localidadInsercion: (user as any).localidadInsercion || "",
         },
         complementaryCourses: (user.complementaryCourses || []).map((c: any) => ({
           nombreCurso: c.nombreCurso || "",
@@ -252,6 +254,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
       insertado: data.insercion.insertado,
       sector: data.insercion.insertado === "SI" ? data.insercion.sector : undefined,
       empresa: data.insercion.insertado === "SI" ? data.insercion.empresa : undefined,
+      localidadInsercion: data.insercion.insertado === "SI" ? data.insercion.localidadInsercion : undefined,
       complementaryCourses: data.complementaryCourses,
       incomeMembers: data.incomeMembers,
     }
@@ -725,6 +728,10 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
                     <div className="space-y-2">
                       <Label htmlFor="empresa">Empresa</Label>
                       <Input id="empresa" {...register("insercion.empresa")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="localidadInsercion">Localidad de Inserción</Label>
+                      <Input id="localidadInsercion" {...register("insercion.localidadInsercion")} />
                     </div>
                   </>
                 )}

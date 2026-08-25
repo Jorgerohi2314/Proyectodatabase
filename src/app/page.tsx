@@ -1,7 +1,7 @@
 "use client"
 
 import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { UserTable } from "@/components/user-table"
 import { UserSearchClient } from "@/components/user-search-client"
@@ -12,7 +12,9 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
-import Header from "@/components/header";
+import Header from "@/components/header"
+import { LaboralYearNavbar } from "@/components/laboral-year-navbar"
+import { getLaboralYear } from "@/lib/utils/laboral-year";
 
 interface UserWithRelations extends UserProfile {
   socioEconomicData?: { id: string; composicionFamiliar: string; situacionEconomica: string; otrasCircunstancias?: string; }
@@ -29,7 +31,13 @@ export default function Home() {
   const [showViewForm, setShowViewForm] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserWithRelations | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [activeLaboralYear, setActiveLaboralYear] = useState<string | null>(null)
   const { logout } = useAuth()
+
+  const filteredUsers = useMemo(() => {
+    if (!activeLaboralYear) return users
+    return users.filter(user => getLaboralYear(user.updatedAt) === activeLaboralYear)
+  }, [users, activeLaboralYear])
 
   const fetchUsers = async (filters?: SearchFilters) => {
     try {
@@ -176,14 +184,37 @@ export default function Home() {
     <ProtectedRoute>
       <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
         <div className="container mx-auto p-6 space-y-8 z-10">
-        <Header onCreateUser={handleCreateUser} />
-          <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
-          <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-xl">
-            <CardHeader><CardTitle className="text-xl text-slate-800">Lista de Usuarios</CardTitle></CardHeader>
-            <CardContent>
-              <UserTable users={users} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} onDownloadPDF={handleDownloadPDF} loading={loading} />
-            </CardContent>
-          </Card>
+          <Header onCreateUser={handleCreateUser} />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <aside className="lg:col-span-1">
+              <LaboralYearNavbar
+                users={users}
+                onFilterChange={setActiveLaboralYear}
+                activeFilter={activeLaboralYear}
+              />
+            </aside>
+            <main className="lg:col-span-3 space-y-6">
+              <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
+              <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-xl">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl text-slate-800">Lista de Usuarios</CardTitle>
+                    {activeLaboralYear && (
+                      <button
+                        onClick={() => setActiveLaboralYear(null)}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        Ver todos los años
+                      </button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <UserTable users={filteredUsers} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} onDownloadPDF={handleDownloadPDF} loading={loading} />
+                </CardContent>
+              </Card>
+            </main>
+          </div>
 
           <Dialog modal={true} open={showCreateForm} onOpenChange={setShowCreateForm}>
             <DialogContent className="max-w-7xl w-full max-h-[90vh] p-0 overflow-hidden">

@@ -6,88 +6,18 @@ import { Edit, Trash2, Download, Eye, ArrowUpDown } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { calcularEdad } from "@/lib/utils/edad"
 import { LoadingSpinner } from "./loading-spinner"
-import AnimatedList from "./animated-list" // Importamos el nuevo componente
-import "./animated-list.css" // Importamos los estilos
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
-interface UserTableProps {
-  users: UserProfile[]
-  onEdit: (user: UserProfile) => void
-  onDelete: (id: string) => void
-  onView: (user: UserProfile) => void
-  onDownloadPDF: (id: string) => void
-  loading?: boolean
-}
+// ... (keep the rest of the imports)
 
-// Componente para renderizar cada tarjeta de usuario
-const UserCard = ({ 
-  user, 
-  onEdit, 
-  onDelete, 
-  onView, 
-  onDownloadPDF 
-}: { 
-  user: UserProfile, 
-  onEdit: (user: UserProfile) => void, 
-  onDelete: (id: string) => void, 
-  onView: (user: UserProfile) => void, 
-  onDownloadPDF: (id: string) => void 
-}) => {
-  const gmailUrl = user.email ? `https://mail.google.com/mail/?view=cm&fs=1&to=${user.email}` : '#';
-
-  return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between w-full px-4 py-3 border-b hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-150">
-      
-      {/* --- Grupo Izquierdo: Información Principal --- */}
-      <div className="flex-grow cursor-pointer" onClick={() => onView(user)}>
-        <h3 className="font-semibold text-base text-gray-800 dark:text-gray-100">{user.nombre} {user.apellidos}</h3>
-        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center flex-wrap gap-x-2">
-          {user.email ? (
-            <a
-              href={gmailUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:underline text-base font-semibold text-secondary dark:text-primary"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {user.email}
-            </a>
-          ) : (
-            <span>Sin email</span>
-          )}
-          
-          <span className="text-gray-300 dark:text-gray-600">·</span>
-          
-          <span>{user.telefono1 || 'Sin teléfono'}</span>
-        </div>
-      </div>
-
-      {/* --- Grupo Derecho: Metadatos y Acciones --- */}
-      <div className="flex items-center justify-between mt-2 md:mt-0 md:justify-end gap-x-4 flex-shrink-0">
-        <div className="flex items-center gap-x-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>{user.localidad || 'N/A'}</span>
-          <span className="text-gray-300 dark:text-gray-600">·</span>
-          <span>{calcularEdad(user.fechaNacimiento as unknown as Date)} años</span>
-        </div>
-        
-        <div className="flex items-center">
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onView(user); }} className="h-8 w-8 p-0" title="Ver detalles">
-            <Eye className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onEdit(user); }} className="h-8 w-8 p-0" title="Editar">
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDownloadPDF(user.id); }} className="h-8 w-8 p-0" title="Descargar PDF">
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDelete(user.id); }} className="h-8 w-8 p-0 text-red-600 hover:text-red-700" title="Eliminar">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
+// ... (keep UserCard component for now, it might be useful for a responsive view later or other parts of the app)
 
 export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, loading = false }: UserTableProps) {
   const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' } | null>({ key: 'nombre', direction: 'asc' })
@@ -99,11 +29,21 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
         const aValue = a[sortConfig.key]
         const bValue = b[sortConfig.key]
 
+        if (aValue === null || aValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (bValue === null || bValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
+
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortConfig.direction === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue)
         }
+        
+        if (aValue instanceof Date && bValue instanceof Date) {
+          return sortConfig.direction === 'asc'
+            ? aValue.getTime() - bValue.getTime()
+            : bValue.getTime() - aValue.getTime();
+        }
+
         // @ts-ignore
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
         // @ts-ignore
@@ -121,6 +61,14 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
     }
     setSortConfig({ key, direction })
   }
+  
+  const getSortIndicator = (key: keyof UserProfile) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="h-4 w-4 ml-2 opacity-30" />;
+    }
+    return sortConfig.direction === 'asc' ? '🔼' : '🔽';
+  };
+
 
   if (loading) {
     return (
@@ -145,21 +93,66 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
   }
 
   return (
-    <div className="w-full">
-        <AnimatedList
-            items={sortedUsers}
-            onItemSelect={(item) => onView(item as UserProfile)}
-            renderItem={(user) => (
-              <UserCard 
-                user={user as UserProfile}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onView={onView}
-                onDownloadPDF={onDownloadPDF}
-              />
-            )}
-            itemKey="id"
-        />
+    <div className="w-full border rounded-lg">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead onClick={() => requestSort('nombre')} className="cursor-pointer">
+              <div className="flex items-center">Nombre {getSortIndicator('nombre')}</div>
+            </TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Teléfono</TableHead>
+            <TableHead onClick={() => requestSort('localidad')} className="cursor-pointer">
+              <div className="flex items-center">Localidad {getSortIndicator('localidad')}</div>
+            </TableHead>
+            <TableHead onClick={() => requestSort('fechaNacimiento')} className="cursor-pointer">
+              <div className="flex items-center">Edad {getSortIndicator('fechaNacimiento')}</div>
+            </TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedUsers.map((user) => (
+            <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+              <TableCell className="font-medium" onClick={() => onView(user)}>{user.nombre} {user.apellidos}</TableCell>
+              <TableCell>
+                {user.email ? (
+                  <a
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${user.email}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline text-secondary dark:text-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {user.email}
+                  </a>
+                ) : (
+                  <span className="text-gray-400">N/A</span>
+                )}
+              </TableCell>
+              <TableCell>{user.telefono1 || <span className="text-gray-400">N/A</span>}</TableCell>
+              <TableCell>{user.localidad || <span className="text-gray-400">N/A</span>}</TableCell>
+              <TableCell>{calcularEdad(user.fechaNacimiento as unknown as Date)}</TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end">
+                  <Button variant="ghost" size="sm" onClick={() => onView(user)} className="h-8 w-8 p-0" title="Ver detalles">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => onEdit(user)} className="h-8 w-8 p-0" title="Editar">
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => onDownloadPDF(user.id)} className="h-8 w-8 p-0" title="Descargar PDF">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => onDelete(user.id)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700" title="Eliminar">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }

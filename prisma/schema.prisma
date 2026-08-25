@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -77,6 +77,7 @@ model UserProfile {
   insertado                YesNo    @default(NO)
   sector                   String?
   empresa                  String?
+  localidadInsercion       String?
 
   // Curriculum (documento Word .doc/.docx)
   // Nullable por defecto para preservar integridad de datos existentes
@@ -157,6 +158,8 @@ model IncomeMember {
 model DiaryEntry {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  date      DateTime @default(now())
   content   String
 
   userProfileId String
