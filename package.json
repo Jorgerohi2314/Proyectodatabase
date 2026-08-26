@@ -100,8 +100,6 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@rolldown/binding-wasm32-wasi": "^1.2.5",
-    "@rolldown/binding-win32-x64-msvc": "^1.2.5",
     "@tailwindcss/postcss": "^4",
     "@types/express": "^5.0.3",
     "@types/node": "^20.19.43",
