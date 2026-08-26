@@ -49,6 +49,8 @@ prompt
 server.log"prisma/dev.db" 
 "/migrations" 
 prisma/dev.db 
+prisma/test.db
+prisma/test.db-journal
 .omo/ 
 public/uploads/ 
 /migrations 

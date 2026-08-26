@@ -9,12 +9,19 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ProtectedRoute } from "@/components/protected-route"
 import { useAuth } from "@/contexts/auth-context"
-import { LogOut, Users, Globe, MapPin, Building2, Filter } from "lucide-react"
+import { LogOut, Users, Globe, MapPin, Building2, Filter, Clock } from "lucide-react"
 import Link from "next/link"
 import { getLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year"
 
 type UserRow = { id: string; nombre: string; apellidos: string; sector: string | null; empresa: string | null }
-type StatRow = { label: string; count: number }
+type StatRow = { label: string | null; count: number }
+type HorasUser = { id: string; nombre: string; apellidos: string; totalHoras: number }
+type HorasStats = {
+  umbralHoras: number
+  counts: { menosDe4: number; cuatroOMas: number; sinRegistros: number }
+  menosDe4: HorasUser[]
+  cuatroOMas: HorasUser[]
+}
 
 export default function StatsPage() {
   const [sector, setSector] = useState<string>("TODOS")
@@ -28,6 +35,8 @@ export default function StatsPage() {
   const [nacionalidadStats, setNacionalidadStats] = useState<StatRow[]>([])
   const [localidadStats, setLocalidadStats] = useState<StatRow[]>([])
   const [localidadInsercionStats, setLocalidadInsercionStats] = useState<StatRow[]>([])
+  const [horasStats, setHorasStats] = useState<HorasStats | null>(null)
+  const [sectorInsercionStats, setSectorInsercionStats] = useState<StatRow[]>([])
   const { logout } = useAuth()
 
   const sectores = useMemo(() => [
@@ -56,13 +65,20 @@ export default function StatsPage() {
       
       const res = await fetch(`/api/stats/insercion?${params.toString()}`, { cache: 'no-store' })
       const data = await res.json()
+      const humanize = (v: string | null | undefined) =>
+        v ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase().replace(/_/g, ' ') : null
       setTotal(data.total || 0)
       setUsers(data.users || [])
       setCompanies(data.companies || [])
-      setSexoStats(data.sexo || [])
-      setNacionalidadStats(data.nacionalidad || [])
-      setLocalidadStats(data.localidad || [])
-      setLocalidadInsercionStats(data.localidadInsercion || [])
+      setSexoStats((data.sexo || []).map((s: { sexo: string | null; count: number }) => ({ label: humanize(s.sexo), count: s.count })))
+      setNacionalidadStats((data.nacionalidad || []).map((n: { nacionalidad: string | null; count: number }) => ({ label: humanize(n.nacionalidad), count: n.count })))
+      setLocalidadStats((data.localidad || []).map((l: { localidad: string | null; count: number }) => ({ label: humanize(l.localidad), count: l.count })))
+      setLocalidadInsercionStats((data.localidadInsercion || []).map((l: { localidadInsercion: string | null; count: number }) => ({ label: humanize(l.localidadInsercion), count: l.count })))
+
+      const resHoras = await fetch(`/api/stats/horas?${params.toString()}`, { cache: 'no-store' })
+      const dataHoras = await resHoras.json()
+      setHorasStats(dataHoras)
+      setSectorInsercionStats((data.sectorInsercion || []).map((s: { sector: string | null; count: number }) => ({ label: humanize(s.sector), count: s.count })))
     } finally {
       setLoading(false)
     }
@@ -73,6 +89,14 @@ export default function StatsPage() {
   }, [sector, laboralYear, onlyInserted])
 
   const formatLabel = (label: string | null | undefined) => label ?? 'Sin especificar'
+
+  const formatDuracion = (horas: number) => {
+    const h = Math.floor(horas)
+    const m = Math.round((horas - h) * 60)
+    if (h === 0) return `${m} min`
+    if (m === 0) return `${h} h`
+    return `${h} h ${m} min`
+  }
 
   return (
     <ProtectedRoute>
@@ -302,7 +326,105 @@ export default function StatsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Sector de Inserción */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="h-5 w-5 text-teal-600" />
+                Sector de Inserción
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
+              ) : sectorInsercionStats.length === 0 ? (
+                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Sector</TableHead>
+                      <TableHead className="text-right">Inserciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sectorInsercionStats.map((s) => (
+                      <TableRow key={s.label}>
+                        <TableCell>{formatLabel(s.label)}</TableCell>
+                        <TableCell className="text-right font-medium">{s.count}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Estadísticas por horas dedicadas */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Clock className="h-5 w-5 text-indigo-600" />
+              Horas Dedicadas {horasStats ? `(umbral: ${horasStats.umbralHoras} h)` : ''}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!horasStats ? (
+              <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-orange-50 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-orange-600">{horasStats.counts.menosDe4}</p>
+                    <p className="text-sm text-gray-600">Menos de {horasStats.umbralHoras} horas</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-green-600">{horasStats.counts.cuatroOMas}</p>
+                    <p className="text-sm text-gray-600">{horasStats.umbralHoras} o más horas</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-gray-500">{horasStats.counts.sinRegistros}</p>
+                    <p className="text-sm text-gray-600">Sin registros de horas</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-2">Menos de {horasStats.umbralHoras} horas</h4>
+                    {horasStats.menosDe4.length === 0 ? (
+                      <p className="text-sm text-gray-500">Ningún usuario</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {horasStats.menosDe4.map((u) => (
+                          <li key={u.id} className="flex justify-between text-sm bg-gray-50 px-3 py-1.5 rounded">
+                            <span>{u.nombre} {u.apellidos}</span>
+                            <span className="font-medium">{formatDuracion(u.totalHoras)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">{horasStats.umbralHoras} o más horas</h4>
+                    {horasStats.cuatroOMas.length === 0 ? (
+                      <p className="text-sm text-gray-500">Ningún usuario</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {horasStats.cuatroOMas.map((u) => (
+                          <li key={u.id} className="flex justify-between text-sm bg-green-50 px-3 py-1.5 rounded">
+                            <span>{u.nombre} {u.apellidos}</span>
+                            <span className="font-medium">{formatDuracion(u.totalHoras)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Detalle de usuarios y empresas */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

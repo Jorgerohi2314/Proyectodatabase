@@ -31,6 +31,7 @@ export async function GET(
 const createDiaryEntrySchema = z.object({
   content: z.string().min(1, 'El contenido de la entrada no puede estar vacío.'),
   date: z.string().optional().transform(val => val ? new Date(val) : new Date()),
+  horas: z.number().min(0, 'Las horas no pueden ser negativas.').max(24, 'Las horas no pueden superar 24.').nullable().optional(),
 });
 
 /**
@@ -54,12 +55,13 @@ export async function POST(
       );
     }
 
-    const { content, date } = validation.data;
+    const { content, date, horas } = validation.data;
 
     const newEntry = await db.diaryEntry.create({
       data: {
         content,
         date,
+        horas: horas ?? null,
         userProfileId: userId,
       },
     });

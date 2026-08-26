@@ -17,6 +17,7 @@ interface DiaryEntry {
   createdAt: string;
   date: string;
   content: string;
+  horas: number | null;
 }
 
 interface UserDetailViewProps {
@@ -29,6 +30,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [newEntryContent, setNewEntryContent] = useState("");
   const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newEntryHoras, setNewEntryHoras] = useState("");
+  const [newEntryMinutos, setNewEntryMinutos] = useState("");
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
 
@@ -70,7 +73,14 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       const response = await fetch(`/api/users/${user.id}/diary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: newEntryContent, date: newEntryDate }),
+        body: JSON.stringify({
+          content: newEntryContent,
+          date: newEntryDate,
+          horas:
+            newEntryHoras.trim() === '' && newEntryMinutos.trim() === ''
+              ? null
+              : Number(newEntryHoras || 0) + Number(newEntryMinutos || 0) / 60,
+        }),
       });
       if (!response.ok) {
         throw new Error("No se pudo guardar la entrada.");
@@ -79,6 +89,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       setDiaryEntries([newEntry, ...diaryEntries]);
       setNewEntryContent("");
       setNewEntryDate(new Date().toISOString().split('T')[0]);
+      setNewEntryHoras("");
+      setNewEntryMinutos("");
       toast({
         title: "Éxito",
         description: "Nueva entrada del diario guardada.",
@@ -100,6 +112,14 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       month: '2-digit',
       year: 'numeric'
     })
+  }
+
+  const formatDuracion = (horas: number) => {
+    const h = Math.floor(horas)
+    const m = Math.round((horas - h) * 60)
+    if (h === 0) return `${m} min`
+    if (m === 0) return `${h} h`
+    return `${h} h ${m} min`
   }
 
   return (
@@ -362,7 +382,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                             </div>
                             <div>
                               <p className="text-sm text-gray-600">Cantidad</p>
-                              <p className="font-medium">€{member.cantidad.toFixed(2)}</p>
+                              <p className="font-medium">{member.cantidad != null ? `€${member.cantidad.toFixed(2)}` : '—'}</p>
                             </div>
                           </div>
                         </div>
@@ -508,6 +528,30 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                         max={new Date().toISOString().split('T')[0]}
                       />
                     </div>
+                    <div className="space-y-2 w-20 ml-4">
+                      <label className="text-sm font-medium text-gray-700">Horas</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={24}
+                        step={1}
+                        placeholder="0"
+                        value={newEntryHoras}
+                        onChange={(e) => setNewEntryHoras(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 w-24 ml-2">
+                      <label className="text-sm font-medium text-gray-700">Minutos</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={59}
+                        step={5}
+                        placeholder="0"
+                        value={newEntryMinutos}
+                        onChange={(e) => setNewEntryMinutos(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
                  <Button onClick={handleSaveNewEntry} disabled={isSavingEntry}>
@@ -523,7 +567,12 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   <ul className="space-y-4">
                     {diaryEntries.map((entry) => (
                       <li key={entry.id} className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-500">{formatFecha(entry.date)}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-500">{formatFecha(entry.date)}</p>
+                          {entry.horas != null && (
+                            <Badge variant="secondary">{formatDuracion(entry.horas)}</Badge>
+                          )}
+                        </div>
                         <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
                       </li>
                     ))}
