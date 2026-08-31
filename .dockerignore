@@ -10,3 +10,10 @@ pnpm-lock.yaml
 test
 *.log
 local-*
+.env
+.env.*
+prisma/*.db
+prisma/*.db-journal
+db-backups
+docker-compose.yml
+

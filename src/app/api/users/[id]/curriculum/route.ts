@@ -1,8 +1,8 @@
 /**
  * API Route: /api/users/[id]/curriculum
  * 
- * POST   - Sube un documento Word (.doc/.docx) como curriculum
- * GET    - Obtiene info y URL de descarga del curriculum
+ * POST   - Sube un documento (pdf, doc, docx, txt, odt) como curriculum
+ * GET    - Obtiene metadatos del curriculum (los bytes se sirven en /file)
  * DELETE - Elimina el curriculum del usuario
  * 
  * Content-Type: multipart/form-data (para POST)

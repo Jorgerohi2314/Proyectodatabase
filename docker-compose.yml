@@ -1,15 +1,19 @@
 services:
-  db_gestion:
-    image: postgres:15-alpine
-    container_name: db_gestion_temp
-    environment:
-      POSTGRES_USER: usuario_db
-      POSTGRES_PASSWORD: "141414"
-      POSTGRES_DB: gestion_clientes
+  # Aplicación web (SQLite). Los datos viven en /app/prisma/production.db.
+  # NO se sube ninguna BD al repo: los 119 usuarios se copian al homelab por scp/rsync
+  # a ./datos/web_gestion/production.db y se montan como bind-mount.
+  web_gestion:
+    build: ./
+    container_name: web_gestion
+    restart: unless-stopped
     ports:
-      - "5433:5432" # Uso el puerto 5433 para no colisionar con otros servicios locales
+      - "3000:3000"
+    # Corremos como root para poder escribir el bind-mount del host sin problemas de UID.
+    user: "0:0"
+    environment:
+      # Ruta absoluta para evitar ambigüedad de resolución relativa en contenedores
+      - DATABASE_URL=file:/app/prisma/production.db
     volumes:
-      - db_data_temp:/var/lib/postgresql/data
-
-volumes:
-  db_data_temp:
+      # BD persistente del host (copiada por scp/rsync). El entrypoint crea el esquema
+      # si el archivo está vacío.
+      - ./datos/web_gestion/production.db:/app/prisma/production.db

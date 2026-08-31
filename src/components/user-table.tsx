@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Download, Eye, ArrowUpDown } from "lucide-react"
 import { UserProfile } from "@prisma/client"
@@ -20,7 +20,7 @@ import {
 // ... (keep UserCard component for now, it might be useful for a responsive view later or other parts of the app)
 
 export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, loading = false }: UserTableProps) {
-  const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' } | null>({ key: 'nombre', direction: 'asc' })
+  const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' })
 
   const sortedUsers = useMemo(() => {
     let sortableUsers = [...users]
@@ -69,6 +69,27 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
     return sortConfig.direction === 'asc' ? '🔼' : '🔽';
   };
 
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+  const topScrollRef = useRef<HTMLDivElement>(null)
+  const [tableScrollWidth, setTableScrollWidth] = useState(0)
+  const [hasOverflow, setHasOverflow] = useState(false)
+
+  const syncScroll = (source: HTMLDivElement, target: HTMLDivElement | null) => {
+    if (target) target.scrollLeft = source.scrollLeft
+  }
+
+  useEffect(() => {
+    const el = tableScrollRef.current
+    if (!el) return
+    const update = () => {
+      setTableScrollWidth(el.scrollWidth)
+      setHasOverflow(el.scrollWidth > el.clientWidth)
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [users])
 
   if (loading) {
     return (
@@ -93,12 +114,28 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
   }
 
   return (
-    <div className="w-full border rounded-lg">
-      <Table>
+    <div className="w-full border rounded-lg overflow-hidden">
+      {hasOverflow && (
+        <div
+          ref={topScrollRef}
+          onScroll={(e) => syncScroll(e.currentTarget, tableScrollRef.current)}
+          className="overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 cursor-pointer"
+          aria-hidden="true"
+        >
+          <div style={{ width: tableScrollWidth, height: 10 }} />
+        </div>
+      )}
+      <Table
+        scrollRef={tableScrollRef}
+        onScroll={(e) => syncScroll(e.currentTarget, topScrollRef.current)}
+      >
         <TableHeader>
           <TableRow>
             <TableHead onClick={() => requestSort('nombre')} className="cursor-pointer">
               <div className="flex items-center">Nombre {getSortIndicator('nombre')}</div>
+            </TableHead>
+            <TableHead onClick={() => requestSort('createdAt')} className="cursor-pointer">
+              <div className="flex items-center">Fecha alta {getSortIndicator('createdAt')}</div>
             </TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Teléfono</TableHead>
@@ -115,6 +152,9 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
           {sortedUsers.map((user) => (
             <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <TableCell className="font-medium" onClick={() => onView(user)}>{user.nombre} {user.apellidos}</TableCell>
+              <TableCell>
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : <span className="text-gray-400">N/A</span>}
+              </TableCell>
               <TableCell>
                 {user.email ? (
                   <a

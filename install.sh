@@ -61,7 +61,7 @@ if [ ! -f .env ]; then
     echo "⚙️  Creando archivo de configuración .env..."
     cat > .env << EOF
 # Database
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./production.db"
 
 # Next.js
 NEXTAUTH_SECRET="$(openssl rand -base64 32)"

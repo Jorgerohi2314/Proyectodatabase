@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -80,9 +80,12 @@ model UserProfile {
   empresa                  String?
   localidadInsercion       String?
 
-  // Curriculum (documento Word .doc/.docx)
-  // Nullable por defecto para preservar integridad de datos existentes
-  curriculum               String?
+  // Curriculum (documento: pdf, doc, docx, txt, odt)
+  // Almacenado directamente en la BD (BLOB) para simplificar despliegue y backups
+  curriculumFile           Bytes?
+  curriculumFileName       String?
+  curriculumMimeType       String?
+  curriculumSize           Int?
 
   // Relaciones
   socioEconomicData        SocioEconomicData?

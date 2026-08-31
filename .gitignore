@@ -46,11 +46,11 @@ dev.log
 test
 prompt
 
-server.log"prisma/dev.db" 
-"/migrations" 
-prisma/dev.db 
+server.log
+prisma/production.db
 prisma/test.db
 prisma/test.db-journal
 .omo/ 
 public/uploads/ 
 /migrations 
+db-backups/

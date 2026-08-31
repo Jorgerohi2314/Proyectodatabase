@@ -31,13 +31,16 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Node_modules completo para tener el CLI de Prisma (migrate deploy al arrancar)
+# Node_modules completo para tener los engines de Prisma en runtime
 COPY --from=builder /app/node_modules ./node_modules
-# Prisma schema + migrations para migrate deploy
+# Esquema Prisma + helper DDL y entrypoint para crear la BD si está vacía
 COPY --from=builder /app/prisma ./prisma
+COPY docker-entrypoint.js ./
+RUN chown -R nextjs:nodejs /app/prisma
 
 USER nextjs
 EXPOSE 3000
 ENV PORT 3000
-# Aplica las migraciones pendientes antes de arrancar (nunca destructivo)
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+
+# Arranca con el entrypoint: crea el esquema SQLite si falta y lanza la app.
+CMD ["node", "docker-entrypoint.js"]

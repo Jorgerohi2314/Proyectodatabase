@@ -58,14 +58,14 @@ npm start
 
 - **URL:** http://localhost:3000
 - **Puerto por defecto:** 3000
-- **Base de datos:** SQLite (archivo `dev.db`)
+- **Base de datos:** SQLite (archivo `production.db`)
 
 ## 📝 Configuración Básica
 
 El archivo `.env` se crea automáticamente con la configuración básica. Puedes editarlo para personalizar:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./production.db"
 NEXTAUTH_SECRET="tu-secret-aqui"
 NEXTAUTH_URL="http://localhost:3000"
 PORT=3000

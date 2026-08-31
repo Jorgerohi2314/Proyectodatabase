@@ -8,8 +8,8 @@ import { useToast } from "@/hooks/use-toast"
 
 interface CurriculumUploaderProps {
   userId: string | undefined // User ID is needed for the upload endpoint
-  existingCurriculumUrl?: string | null
-  onUploadComplete: (url: string) => void
+  existingCurriculumFileName?: string | null
+  onUploadComplete: (fileName: string) => void
   onDeleteComplete: () => void
 }
 
@@ -25,7 +25,7 @@ const ACCEPTED_FILE_TYPES = {
 
 export function CurriculumUploader({ 
   userId, 
-  existingCurriculumUrl,
+  existingCurriculumFileName,
   onUploadComplete,
   onDeleteComplete
 }: CurriculumUploaderProps) {
@@ -85,8 +85,9 @@ export function CurriculumUploader({
         throw new Error(errorData.error || "Falló la subida del currículum")
       }
 
-      const { url } = await response.json()
-      onUploadComplete(url)
+      const { data: uploadData } = await response.json()
+      const uploadedFileName = uploadData?.fileName || file.name
+      onUploadComplete(uploadedFileName)
       setFile(null)
       toast({
         title: "Éxito",
@@ -133,8 +134,7 @@ export function CurriculumUploader({
     }
   }
 
-  const currentFileUrl = file ? URL.createObjectURL(file) : existingCurriculumUrl
-  const currentFileName = file ? file.name : (existingCurriculumUrl?.split('/').pop() || "Currículum existente")
+  const currentFileName = file ? file.name : (existingCurriculumFileName || "Currículum existente")
 
   return (
     <div className="space-y-4">
@@ -154,7 +154,7 @@ export function CurriculumUploader({
         <p className="text-xs text-gray-500 dark:text-gray-400">Tamaño máximo: {MAX_SIZE_MB}MB</p>
       </div>
 
-      {currentFileUrl && (
+      {(file || existingCurriculumFileName) && (
         <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileIcon className="h-5 w-5 text-gray-500" />

@@ -1,217 +1,103 @@
-# Guía de Despliegue del Proyecto de Gestión de Usuarios
+# Guía de Despliegue (SQLite + Docker)
 
-## 📋 Requisitos del Servidor
+Este proyecto usa **SQLite** (un único archivo `prisma/production.db`) y se despliega en Docker.
+Al no subir la base de datos al repositorio (contiene datos personales: nombre, DNI, direcciones),
+los datos se copian al servidor por `scp`/`rsync` y se montan como volumen.
 
-Antes de desplegar, asegúrate de que tu servidor tenga instalados:
-- Node.js (v18 o superior)
-- npm o yarn
-- SQLite3 (incluido en el proyecto)
+## 🗂️ Estructura de datos
 
-## 📦 Opción 1: Descarga Directa (Recomendada)
+| Archivo | Descripción |
+|---|---|
+| `prisma/production.db` | Base de datos con los datos reales (la que se despliega y usas en producción). |
+| `prisma/test.db` | Base de datos de tests (se recrea sola con `npm test`). |
+| `prisma/schema.prisma` | Esquema (fuente de verdad). |
+| `prisma/sqlite-ddl.js` | DDL en JS: crea el esquema en el contenedor si la BD está vacía. |
+| `scripts/migrate-pg-to-sqlite.ts` | Recrea `production.db` desde `db-backups/*.sql`. |
+| `docker-entrypoint.js` | Entrada del contenedor: crea el esquema si falta y arranca la app. |
 
-### 1. Comprimir el proyecto
-```bash
-# Desde la raíz del proyecto
-cd /home/z/my-project
-tar -czf gestion-usuarios.tar.gz --exclude='node_modules' --exclude='.git' --exclude='*.log' .
-```
+## 🚀 Despliegue en el homelab
 
-### 2. Descargar el archivo comprimido
-El archivo `gestion-usuarios.tar.gz` contendrá todo el proyecto listo para desplegar.
+### 1. Subir la aplicación (código) a GitHub
+La imagen Docker se construye desde el repo. **No subas `prisma/production.db`** (ya está en `.gitignore`).
+Solo se versiona el código y el esquema.
 
-## 🚀 Opción 2: Usar Git (Si tienes acceso SSH)
-
-### 1. Clonar el proyecto
-```bash
-git clone <URL_DEL_REPOSITORIO>
-cd gestion-usuarios
-```
-
-### 2. Instalar dependencias
-```bash
-npm install
-```
-
-## ⚙️ Configuración del Servidor
-
-### 1. Variables de Entorno
-Crea un archivo `.env` en la raíz del proyecto:
-```env
-# Database
-DATABASE_URL="file:./dev.db"
-
-# Next.js
-NEXTAUTH_SECRET="tu-secret-aqui"
-NEXTAUTH_URL="http://tu-dominio.com"
-
-# Port (opcional)
-PORT=3000
-```
-
-### 2. Configurar la Base de Datos
-```bash
-# Generar cliente de Prisma
-npm run db:generate
-
-# Sincronizar esquema con la base de datos
-npm run db:push
-```
-
-## 🏃‍♂️ Ejecución en Producción
-
-### Opción A: Desarrollo (Para pruebas)
-```bash
-npm run dev
-```
-
-### Opción B: Producción (Recomendado)
-```bash
-# Construir la aplicación
-npm run build
-
-# Iniciar en modo producción
-npm start
-```
-
-### Opción C: Usando PM2 (Para producción robusta)
-```bash
-# Instalar PM2 globalmente
-npm install -g pm2
-
-# Iniciar la aplicación con PM2
-pm2 start server.ts --name "gestion-usuarios"
-
-# Guardar la configuración de PM2
-pm2 save
-
-# Configurar PM2 para iniciar en el boot
-pm2 startup
-```
-
-## 🌐 Configuración de Nginx (Opcional pero recomendado)
-
-Si usas Nginx como proxy inverso, crea un archivo de configuración:
-
-```nginx
-server {
-    listen 80;
-    server_name tu-dominio.com;
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-## 🔧 Configuración de SSL/HTTPS (Opcional)
+### 2. En el servidor (homelab): clonar y preparar datos
 
 ```bash
-# Usar Certbot para SSL gratuito
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d tu-dominio.com
+git clone <URL_DEL_REPOSITORIO> Proyectodatabase
+cd Proyectodatabase
+
+# Crear la carpeta donde vivirá la base de datos persistente
+mkdir -p datos/web_gestion
 ```
 
-## 📂 Estructura del Proyecto
+### 3. Copiar la base de datos con los 119 usuarios (desde tu máquina)
 
-```
-gestion-usuarios/
-├── src/
-│   ├── app/                 # Páginas y API routes
-│   ├── components/          # Componentes React
-│   ├── hooks/              # Hooks personalizados
-│   └── lib/                # Utilidades y configuración
-├── prisma/                 # Esquema de base de datos
-├── public/                 # Archivos estáticos
-├── package.json           # Dependencias del proyecto
-├── next.config.ts         # Configuración de Next.js
-├── tailwind.config.ts     # Configuración de Tailwind
-├── tsconfig.json          # Configuración de TypeScript
-├── server.ts              # Archivo de entrada del servidor
-└── .env                   # Variables de entorno (crear)
+```bash
+# Desde tu máquina local (donde está prisma/production.db con los datos)
+scp prisma/production.db usuario@TU_HOMELAB:/ruta/Proyectodatabase/datos/web_gestion/production.db
+# o con rsync:
+rsync -avz prisma/production.db usuario@TU_HOMELAB:/ruta/Proyectodatabase/datos/web_gestion/production.db
 ```
 
-## 🚨 Notas Importantes
+> Importante: el archivo `datos/web_gestion/production.db` debe existir antes del `docker compose up`.
+> Si el bind-mount no encuentra el archivo, Docker crearía un directorio y fallaría.
+> El `docker-entrypoint.js` crea las tablas automáticamente si el archivo está vacío.
 
-1. **Base de Datos:** El proyecto usa SQLite, que crea un archivo `dev.db` en la raíz
-2. **Puerto:** Por defecto usa el puerto 3000
-3. **Archivos Temporales:** Los logs se generan en `dev.log` y `server.log`
-4. **Permisos:** Asegúrate de que el usuario del servidor tenga permisos de escritura
+### 4. Construir y arrancar
 
-## 🔍 Solución de Problemas Comunes
+```bash
+docker compose up -d --build
+```
 
-### Error: "Cannot find module"
+La app queda en `http://TU_HOMELAB:3000`.
+
+## ⚙️ Variables de entorno (contenedor)
+
+El `docker-compose.yml` define:
+
+```yaml
+- DATABASE_URL=file:/app/prisma/production.db   # Ruta absoluta dentro del contenedor
+volumes:
+  - ./datos/web_gestion/production.db:/app/prisma/production.db   # BD persistente del host
+```
+
+Puedes añadir más variables al bloque `environment:` del `docker-compose.yml`.
+
+## 🔄 Actualizar la aplicación
+
+```bash
+cd Proyectodatabase
+git pull
+docker compose up -d --build
+```
+
+La base de datos **no se pierde**: vive en `datos/web_gestion/production.db` del host, fuera de la imagen.
+
+## 🔄 Actualizar los datos (si cambia el dump)
+
+Si quieres repoblar la BD desde el volcado SQL, ejecútalo en tu máquina local y vuelve a copiar:
+
+```bash
+# Local (regenera prisma/production.db con los datos del backup)
+npm run db:migrate-sqlite
+
+# Luego copiar de nuevo al servidor
+scp prisma/production.db usuario@TU_HOMELAB:/ruta/Proyectodatabase/datos/web_gestion/production.db
+docker compose restart web_gestion
+```
+
+## 🔧 Notas
+
+- La web no depende de PostgreSQL: el servicio `db_gestion` del compose original ya **no se usa**.
+- Los curriculum ahora se guardan como BLOB dentro de `production.db`, así que no hace falta volumen de `uploads`.
+- Si tu homelab ya tiene un volumen con una BD SQLite previa, monta esa ruta en vez de `datos/web_gestion/production.db`.
+
+## 🧪 Desarrollo local
+
 ```bash
 npm install
+npm run dev        # usa prisma/production.db local
+npm test           # usa prisma/test.db (se recrea sola)
+npm run db:migrate-sqlite  # regenera production.db desde db-backups/*.sql
 ```
-
-### Error: "Database not found"
-```bash
-npm run db:push
-```
-
-### Error: "Port already in use"
-```bash
-# Cambiar el puerto en el .env
-PORT=3001
-```
-
-### Error: "Permission denied"
-```bash
-# Dar permisos al directorio
-chmod -R 755 /ruta/al/proyecto
-```
-
-## 📊 Monitoreo
-
-### Verificar que la aplicación está corriendo
-```bash
-pm2 status
-```
-
-### Ver logs en tiempo real
-```bash
-pm2 logs gestion-usuarios
-```
-
-### Reiniciar la aplicación
-```bash
-pm2 restart gestion-usuarios
-```
-
-## 🔄 Actualizaciones
-
-Para actualizar el proyecto en el futuro:
-```bash
-# 1. Descargar la nueva versión
-# 2. Detener la aplicación
-pm2 stop gestion-usuarios
-
-# 3. Extraer los nuevos archivos
-# 4. Instalar dependencias
-npm install
-
-# 5. Actualizar base de datos si es necesario
-npm run db:push
-
-# 6. Reconstruir la aplicación
-npm run build
-
-# 7. Iniciar nuevamente
-pm2 start gestion-usuarios
-```
-
-## 📞 Soporte
-
-Si encuentras algún problema durante el despliegue, verifica:
-1. Los requisitos del servidor
-2. Las variables de entorno
-3. Los permisos de los archivos
-4. Los logs de error en `pm2 logs`

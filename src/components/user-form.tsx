@@ -39,7 +39,6 @@ const personalDataSchema = z.object({
   entidadDerivacion: z.string().optional(),
   tecnicoDerivacion: z.string().optional(),
   colectivo: z.string().optional(),
-  curriculum: z.string().url().optional().nullable(),
 })
 
 const socioEconomicDataSchema = z.object({
@@ -110,6 +109,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [curriculumFile, setCurriculumFile] = useState<File | null>(null)
+  const [curriculumFileName, setCurriculumFileName] = useState<string | null>(user?.curriculumFileName ?? null)
 
   const {
     register,
@@ -166,11 +166,6 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
 
   useEffect(() => {
     if (user) {
-      // FIX: Si el curriculum es una ruta relativa, conviértelo en absoluta.
-      const curriculumUrl = user.curriculum && !user.curriculum.startsWith('http')
-        ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/${user.curriculum}`
-        : user.curriculum;
-
       reset({
         personalData: {
           nombre: user.nombre || "",
@@ -195,7 +190,6 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           entidadDerivacion: user.entidadDerivacion || "",
           tecnicoDerivacion: user.tecnicoDerivacion || "",
           colectivo: user.colectivo || "",
-          curriculum: curriculumUrl || null,
         },
         socioEconomicData: user.socioEconomicData
           ? {
@@ -230,6 +224,8 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           cantidad: m.cantidad ?? undefined,
         })),
       })
+      setCurriculumFileName(user.curriculumFileName ?? null)
+      setCurriculumFile(null)
     }
   }, [user, reset])
 
@@ -299,16 +295,14 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
     }
   }
 
-  const handleCurriculumUploadComplete = (url: string) => {
-    setValue("personalData.curriculum", url, { shouldValidate: true, shouldDirty: true })
+  const handleCurriculumUploadComplete = (fileName: string) => {
+    setCurriculumFileName(fileName)
     setCurriculumFile(null)
   }
 
   const handleCurriculumDeleteComplete = () => {
-    setValue("personalData.curriculum", null, { shouldValidate: true, shouldDirty: true })
+    setCurriculumFileName(null)
   }
-
-  const curriculumUrl = watch("personalData.curriculum")
 
 
   return (
@@ -751,7 +745,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
                   </p>
                   <CurriculumUploader
                     userId={user?.id}
-                    existingCurriculumUrl={curriculumUrl}
+                    existingCurriculumFileName={curriculumFileName}
                     onUploadComplete={handleCurriculumUploadComplete}
                     onDeleteComplete={handleCurriculumDeleteComplete}
                   />

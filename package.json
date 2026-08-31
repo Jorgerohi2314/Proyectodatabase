@@ -15,6 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:seed": "tsx prisma/seed.ts",
+    "db:migrate-sqlite": "tsx scripts/migrate-pg-to-sqlite.ts",
     "test:db:reset": "tsx tests/reset-db.ts",
     "test": "npm run test:db:reset && vitest run",
     "test:watch": "vitest"
@@ -27,7 +28,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.1.1",
     "@mdxeditor/editor": "^3.39.1",
-    "@prisma/client": "^6.11.1",
+    "@prisma/client": "6.11.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",

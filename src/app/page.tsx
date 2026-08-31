@@ -185,7 +185,7 @@ export default function Home() {
       <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
         <div className="container mx-auto p-6 space-y-8 z-10">
           <Header onCreateUser={handleCreateUser} />
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <aside className="lg:col-span-1">
               <LaboralYearNavbar
                 users={users}
@@ -193,7 +193,7 @@ export default function Home() {
                 activeFilter={activeLaboralYear}
               />
             </aside>
-            <main className="lg:col-span-3 space-y-6">
+            <main className="lg:col-span-4 space-y-6">
               <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
               <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-xl">
                 <CardHeader>

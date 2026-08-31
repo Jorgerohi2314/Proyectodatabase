@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2 } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
 
 interface DiaryEntry {
@@ -34,6 +34,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const [newEntryMinutos, setNewEntryMinutos] = useState("");
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
+  const [isDeletingEntryId, setIsDeletingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDiaryEntries() {
@@ -113,6 +114,34 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
       year: 'numeric'
     })
   }
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!confirm("¿Seguro que quieres eliminar esta entrada del diario? Esta acción no se puede deshacer.")) {
+      return;
+    }
+    setIsDeletingEntryId(entryId);
+    try {
+      const response = await fetch(`/api/users/${user.id}/diary/${entryId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error("No se pudo eliminar la entrada.");
+      }
+      setDiaryEntries(prev => prev.filter(entry => entry.id !== entryId));
+      toast({
+        title: "Éxito",
+        description: "Entrada del diario eliminada.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: error.message,
+      });
+    } finally {
+      setIsDeletingEntryId(null);
+    }
+  };
 
   const formatDuracion = (horas: number) => {
     const h = Math.floor(horas)
@@ -321,7 +350,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                 </>
               )}
 
-              {user.curriculum && (
+              {user.curriculumFileName && (
                 <>
                   <Separator />
                   <div className="flex items-center gap-3">
@@ -329,8 +358,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                     <div>
                       <p className="text-sm text-gray-600">Currículum</p>
                       <Button asChild variant="link" className="p-0 h-auto">
-                        <a href={user.curriculum} target="_blank" rel="noopener noreferrer">
-                          Descargar Currículum
+                        <a href={`/api/users/${user.id}/curriculum/file`} target="_blank" rel="noopener noreferrer">
+                          {user.curriculumFileName}
                         </a>
                       </Button>
                     </div>
@@ -567,11 +596,23 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   <ul className="space-y-4">
                     {diaryEntries.map((entry) => (
                       <li key={entry.id} className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <p className="text-sm text-gray-500">{formatFecha(entry.date)}</p>
-                          {entry.horas != null && (
-                            <Badge variant="secondary">{formatDuracion(entry.horas)}</Badge>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {entry.horas != null && (
+                              <Badge variant="secondary">{formatDuracion(entry.horas)}</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Eliminar entrada"
+                              disabled={isDeletingEntryId === entry.id}
+                              onClick={() => handleDeleteEntry(entry.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
                       </li>
