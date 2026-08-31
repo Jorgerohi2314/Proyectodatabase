@@ -114,5 +114,8 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
     "vitest": "^3.2.7"
+  },
+  "overrides": {
+    "@swc/helpers": "0.5.23"
   }
 }
