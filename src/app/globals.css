@@ -55,20 +55,20 @@
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0rem;
 
   /* Vibrant & Cool Theme */
-  --background: #f8fafc;
-  /* Slate 50 - Cool Light Base */
+  --background: #F4F1F8;
+  /* Lavender - Cool Light Base */
   --foreground: #0f172a;
   /* Slate 900 - Deep Contrast Text */
 
-  --card: rgba(255, 255, 255, 0.7);
-  /* Glassy White */
+  --card: rgba(244, 241, 248, 0.7);
+  /* Lavender Glassy White */
   --card-foreground: #1e293b;
   /* Slate 800 */
 
-  --popover: rgba(255, 255, 255, 0.9);
+  --popover: rgba(244, 241, 248, 0.9);
   --popover-foreground: #0f172a;
 
   --primary: #fbe311;
@@ -107,13 +107,13 @@
   --chart-5: #8b5cf6;
   /* Violet 500 */
 
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #334155;
+  --sidebar: #ece8f2;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #fbe311;
+  --sidebar-primary-foreground: #261606;
+  --sidebar-accent: #dcd6e8;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #d5cede;
   --sidebar-ring: #818cf8;
 }
 
@@ -191,7 +191,7 @@
   input,
   textarea,
   select {
-    @apply border-2 border-transparent bg-muted/50 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-xl;
+    @apply border-2 border-transparent bg-muted/50 backdrop-blur-sm shadow-sm transition-all duration-300 rounded-none;
   }
 
   input:focus,
@@ -218,10 +218,10 @@
 /* Custom Utilities for Glassmorphism */
 @layer utilities {
   .glass {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl;
+    @apply bg-[#F4F1F8]/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-xl;
   }
 
   .glass-hover {
-    @apply hover:bg-white/80 dark:hover:bg-slate-900/80 transition-all duration-300;
+    @apply hover:bg-[#F4F1F8]/80 dark:hover:bg-slate-900/80 transition-all duration-300;
   }
 }

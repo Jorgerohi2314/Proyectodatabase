@@ -3,6 +3,7 @@
 import React from 'react';
 import PillNav, { PillNavItem } from './pills-nav';
 import Clock from './clock';
+import { ThemeToggle } from './theme-toggle';
 import '../styles/pills-nav.css';
 
 interface HeaderProps {
@@ -42,7 +43,8 @@ const Header: React.FC<HeaderProps> = ({ onCreateUser }) => {
       </div>
 
       {/* Columna Derecha: Navegación */}
-      <div className="justify-self-end">
+      <div className="justify-self-end flex items-center gap-3">
+        <ThemeToggle />
         <PillNav
           items={navItems}
           baseColor="var(--secondary)"

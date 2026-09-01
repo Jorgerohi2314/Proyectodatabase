@@ -73,7 +73,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-20 bg-gray-100 animate-pulse rounded"></div>
+          <div className="h-20 bg-gray-100 dark:bg-gray-800 animate-pulse rounded"></div>
         </CardContent>
       </Card>
     )
@@ -97,7 +97,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Nombre</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Nombre</label>
             <Input
               placeholder="Buscar por nombre..."
               value={filters.nombre || ""}
@@ -106,7 +106,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Apellidos</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Apellidos</label>
             <Input
               placeholder="Buscar por apellidos..."
               value={filters.apellidos || ""}
@@ -115,7 +115,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Formación Académica</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Formación Académica</label>
             <Select
               value={filters.formacionAcademica || "TODAS"}
               onValueChange={(value) => setFilters({ ...filters, formacionAcademica: value === "TODAS" ? "" : value })}
@@ -140,7 +140,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
             </Select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-1 block">Experiencia Laboral</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Experiencia Laboral</label>
             <Input
               placeholder="Buscar experiencia..."
               value={filters.experienciaLaboralPrevia || ""}
@@ -172,9 +172,9 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
               <DialogTitle>Inserciones por sector</DialogTitle>
             </DialogHeader>
             {loadingStats ? (
-              <div className="py-8 text-center text-sm text-gray-500">Cargando...</div>
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
             ) : stats.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-500">Sin datos</div>
+              <div className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
             ) : (
               <Table>
                 <TableHeader>

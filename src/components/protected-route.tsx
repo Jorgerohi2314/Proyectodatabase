@@ -23,8 +23,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Verificando autenticación...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600 dark:text-blue-400" />
+          <p className="text-gray-600 dark:text-gray-400">Verificando autenticación...</p>
         </div>
       </div>
     )

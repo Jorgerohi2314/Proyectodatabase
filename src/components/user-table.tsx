@@ -102,7 +102,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
   if (users.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="text-gray-400 mb-4">
+        <div className="text-gray-400 dark:text-gray-500 mb-4">
           <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
@@ -153,7 +153,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
             <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <TableCell className="font-medium" onClick={() => onView(user)}>{user.nombre} {user.apellidos}</TableCell>
               <TableCell>
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : <span className="text-gray-400">N/A</span>}
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : <span className="text-gray-400 dark:text-gray-500">N/A</span>}
               </TableCell>
               <TableCell>
                 {user.email ? (
@@ -167,11 +167,11 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
                     {user.email}
                   </a>
                 ) : (
-                  <span className="text-gray-400">N/A</span>
+                  <span className="text-gray-400 dark:text-gray-500">N/A</span>
                 )}
               </TableCell>
-              <TableCell>{user.telefono1 || <span className="text-gray-400">N/A</span>}</TableCell>
-              <TableCell>{user.localidad || <span className="text-gray-400">N/A</span>}</TableCell>
+              <TableCell>{user.telefono1 || <span className="text-gray-400 dark:text-gray-500">N/A</span>}</TableCell>
+              <TableCell>{user.localidad || <span className="text-gray-400 dark:text-gray-500">N/A</span>}</TableCell>
               <TableCell>{calcularEdad(user.fechaNacimiento as unknown as Date)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end">

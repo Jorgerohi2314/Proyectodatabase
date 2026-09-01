@@ -9,12 +9,12 @@ import type { SearchFilters } from "@/components/user-search"
 import { UserForm } from "@/components/user-form"
 import { UserDetailView } from "@/components/user-detail-view"
 import { ProtectedRoute } from "@/components/protected-route"
-import { useAuth } from "@/contexts/auth-context"
 import { UserProfile } from "@prisma/client"
 import { toast } from "sonner"
-import Header from "@/components/header"
-import { LaboralYearNavbar } from "@/components/laboral-year-navbar"
-import { getLaboralYear } from "@/lib/utils/laboral-year";
+import { AppShell } from "@/components/app-shell"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { getLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year";
 
 interface UserWithRelations extends UserProfile {
   socioEconomicData?: { id: string; composicionFamiliar: string; situacionEconomica: string; otrasCircunstancias?: string; }
@@ -32,12 +32,21 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState<UserWithRelations | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [activeLaboralYear, setActiveLaboralYear] = useState<string | null>(null)
-  const { logout } = useAuth()
 
   const filteredUsers = useMemo(() => {
     if (!activeLaboralYear) return users
     return users.filter(user => getLaboralYear(user.updatedAt) === activeLaboralYear)
   }, [users, activeLaboralYear])
+
+  const usersByYear = useMemo(() => {
+    const groups: Record<string, UserWithRelations[]> = {}
+    users.forEach(user => {
+      const year = getLaboralYear(user.updatedAt)
+      if (!groups[year]) groups[year] = []
+      groups[year].push(user)
+    })
+    return groups
+  }, [users])
 
   const fetchUsers = async (filters?: SearchFilters) => {
     try {
@@ -182,27 +191,52 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen w-full bg-gray-50 relative overflow-hidden">
-        <div className="container mx-auto p-6 space-y-8 z-10">
-          <Header onCreateUser={handleCreateUser} />
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <aside className="lg:col-span-1">
-              <LaboralYearNavbar
-                users={users}
-                onFilterChange={setActiveLaboralYear}
-                activeFilter={activeLaboralYear}
-              />
-            </aside>
-            <main className="lg:col-span-4 space-y-6">
-              <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
-              <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-xl">
+      <AppShell
+        title="Usuarios"
+        actions={
+          <Button onClick={handleCreateUser} className="gap-2 rounded-none">
+            <Plus className="h-4 w-4" />
+            Crear Usuario
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-muted-foreground">Años:</span>
+          <button
+            onClick={() => setActiveLaboralYear(null)}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+              activeLaboralYear === null
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-foreground hover:bg-accent"
+            }`}
+          >
+            Todos
+          </button>
+          {sortLaboralYears(Object.keys(usersByYear)).map((year) => (
+            <button
+              key={year}
+              onClick={() => setActiveLaboralYear(year)}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                activeLaboralYear === year
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-foreground hover:bg-accent"
+              }`}
+            >
+              {year} <span className="opacity-70">({usersByYear[year].length})</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-6">
+          <UserSearchClient onSearch={handleSearch} onClear={handleClear} />
+              <Card className="border-0 shadow-xl bg-[#F4F1F8]/60 dark:bg-gray-800/60 backdrop-blur-xl">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl text-slate-800">Lista de Usuarios</CardTitle>
+                    <CardTitle className="text-xl text-slate-800 dark:text-white">Lista de Usuarios</CardTitle>
                     {activeLaboralYear && (
                       <button
                         onClick={() => setActiveLaboralYear(null)}
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         Ver todos los años
                       </button>
@@ -213,8 +247,7 @@ export default function Home() {
                   <UserTable users={filteredUsers} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} onDownloadPDF={handleDownloadPDF} loading={loading} />
                 </CardContent>
               </Card>
-            </main>
-          </div>
+        </div>
 
           <Dialog modal={true} open={showCreateForm} onOpenChange={setShowCreateForm}>
             <DialogContent className="max-w-7xl w-full max-h-[90vh] p-0 overflow-hidden">
@@ -253,8 +286,7 @@ export default function Home() {
                   {selectedUser && <UserDetailView user={selectedUser} onClose={() => { setShowViewForm(false); setSelectedUser(null); }} />}
               </DialogContent>
           </Dialog>
-        </div>
-      </div>
+      </AppShell>
     </ProtectedRoute>
   )
 }

@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { ProtectedRoute } from "@/components/protected-route"
-import { useAuth } from "@/contexts/auth-context"
-import { LogOut, Users, Globe, MapPin, Building2, Filter, Clock } from "lucide-react"
+import { Users, Globe, MapPin, Building2, Filter, Clock } from "lucide-react"
 import Link from "next/link"
+import { AppShell } from "@/components/app-shell"
 import { getLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year"
+import { normalizeNationality } from "@/lib/data/nationalities"
 
 type UserRow = { id: string; nombre: string; apellidos: string; sector: string | null; empresa: string | null }
 type StatRow = { label: string | null; count: number }
@@ -37,7 +38,6 @@ export default function StatsPage() {
   const [localidadInsercionStats, setLocalidadInsercionStats] = useState<StatRow[]>([])
   const [horasStats, setHorasStats] = useState<HorasStats | null>(null)
   const [sectorInsercionStats, setSectorInsercionStats] = useState<StatRow[]>([])
-  const { logout } = useAuth()
 
   const sectores = useMemo(() => [
     "TODOS", "Agricultura", "Hortofruticola", "Obra", "Ganaderia", "Servicios", "Industria", "Hosteleria", "Comercio", "Otro"
@@ -67,11 +67,24 @@ export default function StatsPage() {
       const data = await res.json()
       const humanize = (v: string | null | undefined) =>
         v ? v.charAt(0).toUpperCase() + v.slice(1).toLowerCase().replace(/_/g, ' ') : null
+      const mergeByLabel = (rows: { label: string | null; count: number }[]) => {
+        const map = new Map<string, { label: string; count: number }>()
+        for (const r of rows) {
+          const key = r.label ?? 'Sin especificar'
+          const existing = map.get(key)
+          if (existing) {
+            existing.count += r.count
+          } else {
+            map.set(key, { label: key, count: r.count })
+          }
+        }
+        return Array.from(map.values())
+      }
       setTotal(data.total || 0)
       setUsers(data.users || [])
       setCompanies(data.companies || [])
       setSexoStats((data.sexo || []).map((s: { sexo: string | null; count: number }) => ({ label: humanize(s.sexo), count: s.count })))
-      setNacionalidadStats((data.nacionalidad || []).map((n: { nacionalidad: string | null; count: number }) => ({ label: humanize(n.nacionalidad), count: n.count })))
+      setNacionalidadStats(mergeByLabel((data.nacionalidad || []).map((n: { nacionalidad: string | null; count: number }) => ({ label: normalizeNationality(n.nacionalidad) || null, count: n.count }))))
       setLocalidadStats((data.localidad || []).map((l: { localidad: string | null; count: number }) => ({ label: humanize(l.localidad), count: l.count })))
       setLocalidadInsercionStats((data.localidadInsercion || []).map((l: { localidadInsercion: string | null; count: number }) => ({ label: humanize(l.localidadInsercion), count: l.count })))
 
@@ -100,19 +113,8 @@ export default function StatsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Estadísticas</h1>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/">Volver</Link>
-            </Button>
-            <Button onClick={logout} variant="outline" className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </Button>
-          </div>
-        </div>
+      <AppShell title="Estadísticas">
+      <div className="space-y-6">
 
         {/* Filtros */}
         <Card>
@@ -125,7 +127,7 @@ export default function StatsPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700">Año Laboral</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Año Laboral</Label>
                 <Select value={laboralYear ?? "TODOS"} onValueChange={(v) => setLaboralYear(v === "TODOS" ? null : v)}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Todos los años" />
@@ -140,7 +142,7 @@ export default function StatsPage() {
               </div>
               
               <div>
-                <Label className="text-sm font-medium text-gray-700">Sector</Label>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sector</Label>
                 <Select value={sector} onValueChange={setSector}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sector" />
@@ -154,15 +156,15 @@ export default function StatsPage() {
               </div>
 
               <div className="flex items-end">
-                <Label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={onlyInserted}
-                    onChange={(e) => setOnlyInserted(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Solo usuarios insertados</span>
-                </Label>
+<Label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={onlyInserted}
+                      onChange={(e) => setOnlyInserted(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:ring-offset-gray-900"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Solo usuarios insertados</span>
+                  </Label>
               </div>
             </div>
           </CardContent>
@@ -176,9 +178,9 @@ export default function StatsPage() {
                 <Users className="h-5 w-5" />
                 <span>Resumen General</span>
               </div>
-              <div className="text-2xl font-semibold text-blue-600">
-                Total: {loading ? '...' : total}
-              </div>
+<div className="text-2xl font-semibold text-blue-600 dark:text-blue-400">
+                  Total: {loading ? '...' : total}
+                </div>
             </CardTitle>
           </CardHeader>
         </Card>
@@ -189,15 +191,15 @@ export default function StatsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 Por Sexo
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
-              ) : sexoStats.length === 0 ? (
-                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+<div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : sexoStats.length === 0 ? (
+                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -207,8 +209,8 @@ export default function StatsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sexoStats.map((s) => (
-                      <TableRow key={s.label}>
+                    {sexoStats.map((s, i) => (
+                      <TableRow key={`${s.label}-${i}`}>
                         <TableCell>{formatLabel(s.label)}</TableCell>
                         <TableCell className="text-right font-medium">{s.count}</TableCell>
                       </TableRow>
@@ -223,15 +225,15 @@ export default function StatsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Globe className="h-5 w-5 text-green-600" />
+                <Globe className="h-5 w-5 text-green-600 dark:text-green-400" />
                 Por Nacionalidad
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
-              ) : nacionalidadStats.length === 0 ? (
-                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+<div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : nacionalidadStats.length === 0 ? (
+                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
               ) : (
                 <div className="max-h-60 overflow-y-auto">
                   <Table>
@@ -242,8 +244,8 @@ export default function StatsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {nacionalidadStats.slice(0, 10).map((n) => (
-                        <TableRow key={n.label}>
+                      {nacionalidadStats.slice(0, 10).map((n, i) => (
+                        <TableRow key={`${n.label}-${i}`}>
                           <TableCell>{formatLabel(n.label)}</TableCell>
                           <TableCell className="text-right font-medium">{n.count}</TableCell>
                         </TableRow>
@@ -259,15 +261,15 @@ export default function StatsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="h-5 w-5 text-orange-600" />
+                <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 Por Localidad
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
-              ) : localidadStats.length === 0 ? (
-                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+<div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : localidadStats.length === 0 ? (
+                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
               ) : (
                 <div className="max-h-60 overflow-y-auto">
                   <Table>
@@ -278,8 +280,8 @@ export default function StatsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {localidadStats.slice(0, 10).map((l) => (
-                        <TableRow key={l.label}>
+                      {localidadStats.slice(0, 10).map((l, i) => (
+                        <TableRow key={`${l.label}-${i}`}>
                           <TableCell>{formatLabel(l.label)}</TableCell>
                           <TableCell className="text-right font-medium">{l.count}</TableCell>
                         </TableRow>
@@ -295,15 +297,15 @@ export default function StatsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="h-5 w-5 text-purple-600" />
+                <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 Localidad Inserción
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
-              ) : localidadInsercionStats.length === 0 ? (
-                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+<div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : localidadInsercionStats.length === 0 ? (
+                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
               ) : (
                 <div className="max-h-60 overflow-y-auto">
                   <Table>
@@ -314,8 +316,8 @@ export default function StatsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {localidadInsercionStats.map((l) => (
-                        <TableRow key={l.label}>
+                      {localidadInsercionStats.map((l, i) => (
+                        <TableRow key={`${l.label}-${i}`}>
                           <TableCell>{formatLabel(l.label)}</TableCell>
                           <TableCell className="text-right font-medium">{l.count}</TableCell>
                         </TableRow>
@@ -331,15 +333,15 @@ export default function StatsPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="h-5 w-5 text-teal-600" />
+                <Building2 className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                 Sector de Inserción
               </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
-              ) : sectorInsercionStats.length === 0 ? (
-                <div className="py-4 text-center text-sm text-gray-500">Sin datos</div>
+<div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : sectorInsercionStats.length === 0 ? (
+                 <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Sin datos</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -349,8 +351,8 @@ export default function StatsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sectorInsercionStats.map((s) => (
-                      <TableRow key={s.label}>
+                    {sectorInsercionStats.map((s, i) => (
+                      <TableRow key={`${s.label}-${i}`}>
                         <TableCell>{formatLabel(s.label)}</TableCell>
                         <TableCell className="text-right font-medium">{s.count}</TableCell>
                       </TableRow>
@@ -366,38 +368,38 @@ export default function StatsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Clock className="h-5 w-5 text-indigo-600" />
+              <Clock className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               Horas Dedicadas {horasStats ? `(umbral: ${horasStats.umbralHoras} h)` : ''}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!horasStats ? (
-              <div className="py-4 text-center text-sm text-gray-500">Cargando...</div>
+              <div className="py-4 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-orange-50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-orange-600">{horasStats.counts.menosDe4}</p>
-                    <p className="text-sm text-gray-600">Menos de {horasStats.umbralHoras} horas</p>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{horasStats.counts.menosDe4}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Menos de {horasStats.umbralHoras} horas</p>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-green-600">{horasStats.counts.cuatroOMas}</p>
-                    <p className="text-sm text-gray-600">{horasStats.umbralHoras} o más horas</p>
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">{horasStats.counts.cuatroOMas}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{horasStats.umbralHoras} o más horas</p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg text-center">
-                    <p className="text-3xl font-bold text-gray-500">{horasStats.counts.sinRegistros}</p>
-                    <p className="text-sm text-gray-600">Sin registros de horas</p>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-gray-500 dark:text-gray-400">{horasStats.counts.sinRegistros}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Sin registros de horas</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-semibold mb-2">Menos de {horasStats.umbralHoras} horas</h4>
                     {horasStats.menosDe4.length === 0 ? (
-                      <p className="text-sm text-gray-500">Ningún usuario</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ningún usuario</p>
                     ) : (
                       <ul className="space-y-1">
                         {horasStats.menosDe4.map((u) => (
-                          <li key={u.id} className="flex justify-between text-sm bg-gray-50 px-3 py-1.5 rounded">
+                          <li key={u.id} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded">
                             <span>{u.nombre} {u.apellidos}</span>
                             <span className="font-medium">{formatDuracion(u.totalHoras)}</span>
                           </li>
@@ -408,11 +410,11 @@ export default function StatsPage() {
                   <div>
                     <h4 className="font-semibold mb-2">{horasStats.umbralHoras} o más horas</h4>
                     {horasStats.cuatroOMas.length === 0 ? (
-                      <p className="text-sm text-gray-500">Ningún usuario</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Ningún usuario</p>
                     ) : (
                       <ul className="space-y-1">
                         {horasStats.cuatroOMas.map((u) => (
-                          <li key={u.id} className="flex justify-between text-sm bg-green-50 px-3 py-1.5 rounded">
+                          <li key={u.id} className="flex justify-between text-sm bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded">
                             <span>{u.nombre} {u.apellidos}</span>
                             <span className="font-medium">{formatDuracion(u.totalHoras)}</span>
                           </li>
@@ -434,9 +436,9 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-12 text-center text-sm text-gray-500">Cargando...</div>
+                <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
               ) : users.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-500">Sin resultados</div>
+                <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Sin resultados</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -476,9 +478,9 @@ export default function StatsPage() {
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="py-12 text-center text-sm text-gray-500">Cargando...</div>
-              ) : companies.length === 0 ? (
-                <div className="py-12 text-center text-sm text-gray-500">Sin resultados</div>
+<div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Cargando...</div>
+               ) : companies.length === 0 ? (
+                 <div className="py-12 text-center text-sm text-gray-500 dark:text-gray-400">Sin resultados</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -488,8 +490,8 @@ export default function StatsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {companies.map((c) => (
-                      <TableRow key={c.empresa}>
+                    {companies.map((c, i) => (
+                      <TableRow key={`${c.empresa}-${i}`}>
                         <TableCell>{c.empresa}</TableCell>
                         <TableCell className="text-right">{c.count}</TableCell>
                       </TableRow>
@@ -501,6 +503,7 @@ export default function StatsPage() {
           </Card>
         </div>
       </div>
+      </AppShell>
     </ProtectedRoute>
   )
 }

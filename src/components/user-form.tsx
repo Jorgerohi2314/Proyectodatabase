@@ -14,6 +14,8 @@ import { X, Plus } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { useToast } from "@/hooks/use-toast"
 import { CurriculumUploader } from "./curriculum-uploader"
+import { NationalityCombobox } from "./nationality-combobox"
+import { normalizeNationality } from "@/lib/data/nationalities"
 import Stepper, { Step } from "./stepper"
 
 const personalDataSchema = z.object({
@@ -172,7 +174,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           apellidos: user.apellidos || "",
           source: user.source || "PROPIO",
           fechaNacimiento: user.fechaNacimiento ? new Date(user.fechaNacimiento).toISOString().split('T')[0] : "",
-          nacionalidad: user.nacionalidad || "",
+          nacionalidad: normalizeNationality(user.nacionalidad) || "",
           documentoIdentidad: user.documentoIdentidad || "",
           numeroSeguridadSocial: (user as any).numeroSeguridadSocial || "",
           sexo: normalizeGender(user.sexo),
@@ -242,9 +244,10 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
     "OTROS": "Especificación"
   }[formacionAcademica] || "Especificación")
 
-  const onSubmit: SubmitHandler<FormData> = (data) => {
+const onSubmit: SubmitHandler<FormData> = (data) => {
     const completeData = {
       ...data.personalData,
+      nacionalidad: normalizeNationality(data.personalData.nacionalidad),
       socioEconomicData: data.socioEconomicData,
       educationData: data.educationData,
       insertado: data.insercion.insertado,
@@ -324,7 +327,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
             <Step>
                 <div className="space-y-2 mb-6">
                     <h3 className="text-xl font-semibold">Datos Personales</h3>
-                    <p className="text-sm text-gray-500">Información básica y de contacto del usuario.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Información básica y de contacto del usuario.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
                   {/* Fila 1 */}
@@ -372,9 +375,18 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
                     <Input id="documentoIdentidad" {...register("personalData.documentoIdentidad")} />
                     {errors.personalData?.documentoIdentidad && <p className="text-red-500 text-xs">{errors.personalData.documentoIdentidad.message}</p>}
                   </div>
-                  <div>
+<div>
                     <Label htmlFor="nacionalidad">Nacionalidad</Label>
-                    <Input id="nacionalidad" {...register("personalData.nacionalidad")} />
+                    <Controller
+                      name="personalData.nacionalidad"
+                      control={control}
+                      render={({ field }) => (
+                        <NationalityCombobox
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
                     {errors.personalData?.nacionalidad && <p className="text-red-500 text-xs">{errors.personalData.nacionalidad.message}</p>}
                   </div>
                   <div>
@@ -518,7 +530,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
             <Step>
             <div className="space-y-2 mb-6">
                 <h3 className="text-xl font-semibold">Datos Socio-Económicos</h3>
-                <p className="text-sm text-gray-500">Información sobre el entorno familiar y económico.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Información sobre el entorno familiar y económico.</p>
             </div>
             <div className="space-y-6">
                 <div className="space-y-2">
@@ -536,7 +548,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
                 <div className="space-y-4">
                   <h3 className="text-md font-semibold">Miembros Perceptores de Ingresos</h3>
                   {incomeMemberFields.map((field, index) => (
-                    <div key={field.id} className="p-4 border rounded-md space-y-2 bg-white/50">
+                    <div key={field.id} className="p-4 border rounded-md space-y-2 bg-[#F4F1F8]/50 dark:bg-gray-800/50">
                       <div className="flex items-center justify-between">
                           <h4 className="font-semibold">Miembro {index + 1}</h4>
                         <Button variant="ghost" size="sm" onClick={() => removeIncomeMember(index)}><X className="h-4 w-4" /></Button>
@@ -580,7 +592,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           <Step>
              <div className="space-y-2 mb-6">
                 <h3 className="text-xl font-semibold">Datos Formativos y Laborales</h3>
-                <p className="text-sm text-gray-500">Formación académica, complementaria y experiencia laboral.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Formación académica, complementaria y experiencia laboral.</p>
             </div>
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -631,7 +643,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
                 <div className="space-y-4">
                   <h3 className="text-md font-semibold">Formación Complementaria</h3>
                   {courseFields.map((field, index) => (
-                    <div key={field.id} className="p-4 border rounded-md space-y-4 bg-white/50">
+                    <div key={field.id} className="p-4 border rounded-md space-y-4 bg-[#F4F1F8]/50 dark:bg-gray-800/50">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold">Curso {index + 1}</h4>
                         <Button variant="ghost" size="sm" onClick={() => removeCourse(index)}><X className="h-4 w-4" /></Button>
@@ -674,7 +686,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           <Step>
             <div className="space-y-2 mb-6">
                 <h3 className="text-xl font-semibold">Inserción</h3>
-                <p className="text-sm text-gray-500">Estado de la inserción laboral del usuario.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Estado de la inserción laboral del usuario.</p>
             </div>
             <div className="space-y-4 max-w-lg">
                 <div className="space-y-2">
@@ -734,13 +746,13 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           <Step>
              <div className="space-y-2 mb-6">
                 <h3 className="text-xl font-semibold">Currículum</h3>
-                <p className="text-sm text-gray-500">Sube y gestiona el currículum del usuario.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Sube y gestiona el currículum del usuario.</p>
             </div>
             <div className="max-w-lg mx-auto">
-              <Card className="bg-white/50">
+              <Card className="bg-[#F4F1F8]/50 dark:bg-gray-800/50">
                 <CardHeader><CardTitle>Gestión de Currículum</CardTitle></CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Sube un archivo (.doc, .docx, max 5MB).
                   </p>
                   <CurriculumUploader
@@ -760,3 +772,4 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
   )
 }
 // NOTE: The content for the tabs "personal", "socio", "education", and "insercion" is omitted for brevity, but it's the same as the original file.
+

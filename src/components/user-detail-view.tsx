@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2 } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
 
 interface DiaryEntry {
@@ -35,6 +35,12 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const [isLoadingEntries, setIsLoadingEntries] = useState(true);
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   const [isDeletingEntryId, setIsDeletingEntryId] = useState<string | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editHoras, setEditHoras] = useState("");
+  const [editMinutos, setEditMinutos] = useState("");
+  const [isUpdatingEntryId, setIsUpdatingEntryId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDiaryEntries() {
@@ -143,6 +149,68 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
     }
   };
 
+  const handleStartEdit = (entry: DiaryEntry) => {
+    setEditingEntryId(entry.id);
+    setEditContent(entry.content);
+    setEditDate(entry.date.split('T')[0]);
+    const h = Math.floor(entry.horas ?? 0);
+    const m = Math.round(((entry.horas ?? 0) - h) * 60);
+    setEditHoras(h > 0 || entry.horas != null ? String(h) : "");
+    setEditMinutos(m > 0 ? String(m) : "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+    setEditContent("");
+    setEditDate("");
+    setEditHoras("");
+    setEditMinutos("");
+  };
+
+  const handleUpdateEntry = async (entryId: string) => {
+    if (!editContent.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "La entrada del diario no puede estar vacía.",
+      });
+      return;
+    }
+    setIsUpdatingEntryId(entryId);
+    try {
+      const response = await fetch(`/api/users/${user.id}/diary/${entryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: editContent,
+          date: editDate || new Date().toISOString().split('T')[0],
+          horas:
+            editHoras.trim() === '' && editMinutos.trim() === ''
+              ? null
+              : Number(editHoras || 0) + Number(editMinutos || 0) / 60,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("No se pudo actualizar la entrada.");
+      }
+      const updatedEntry = await response.json();
+      setDiaryEntries(prev => prev.map(e => (e.id === entryId ? updatedEntry : e)));
+      handleCancelEdit();
+      toast({
+        title: "Éxito",
+        description: "Entrada del diario actualizada.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al actualizar",
+        description: error.message,
+      });
+    } finally {
+      setIsUpdatingEntryId(null);
+    }
+  };
+
   const formatDuracion = (horas: number) => {
     const h = Math.floor(horas)
     const m = Math.round((horas - h) * 60)
@@ -159,10 +227,10 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             <User className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               {user.nombre} {user.apellidos}
             </h2>
-            <p className="text-gray-600">Detalles completos del usuario</p>
+            <p className="text-gray-600 dark:text-gray-400">Detalles completos del usuario</p>
           </div>
         </div>
         <Button variant="outline" onClick={onClose}>
@@ -202,44 +270,44 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Fecha de Nacimiento</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Fecha de Nacimiento</p>
                     <p className="font-medium">{formatFecha(user.fechaNacimiento)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="h-4 w-4 text-gray-500">🎂</span>
+                  <span className="h-4 w-4 text-gray-500 dark:text-gray-400">🎂</span>
                   <div>
-                    <p className="text-sm text-gray-600">Edad</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Edad</p>
                     <p className="font-medium">{calcularEdad(user.fechaNacimiento)} años</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="h-4 w-4 text-gray-500">🌍</span>
+                  <span className="h-4 w-4 text-gray-500 dark:text-gray-400">🌍</span>
                   <div>
-                    <p className="text-sm text-gray-600">Nacionalidad</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Nacionalidad</p>
                     <p className="font-medium">{user.nacionalidad}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <CreditCard className="h-4 w-4 text-gray-500" />
+                  <CreditCard className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Documento de Identidad</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Documento de Identidad</p>
                     <p className="font-medium">{user.documentoIdentidad}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="h-4 w-4 text-gray-500">👤</span>
+                  <span className="h-4 w-4 text-gray-500 dark:text-gray-400">👤</span>
                   <div>
-                    <p className="text-sm text-gray-600">Sexo</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Sexo</p>
                     <p className="font-medium">{user.sexo === 'HOMBRE' ? 'Hombre' : 'Mujer'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-gray-500" />
+                  <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Localidad</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Localidad</p>
                     <p className="font-medium">{user.localidad}</p>
                   </div>
                 </div>
@@ -248,35 +316,35 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
               <Separator />
               
               <div>
-                <p className="text-sm text-gray-600 mb-2">Dirección</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Dirección</p>
                 <p className="font-medium">{user.direccion}</p>
                 {user.codigoPostal && (
-                  <p className="text-sm text-gray-600">C.P. {user.codigoPostal}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">C.P. {user.codigoPostal}</p>
                 )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-gray-500" />
+                  <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Teléfono 1</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Teléfono 1</p>
                     <p className="font-medium">{user.telefono1 || 'No disponible'}</p>
                   </div>
                 </div>
                 {user.telefono2 && (
                   <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-gray-500" />
+                    <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Teléfono 2</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Teléfono 2</p>
                       <p className="font-medium">{user.telefono2}</p>
                     </div>
                   </div>
                 )}
                 {user.email && (
                   <div className="flex items-center gap-3">
-                    <Mail className="h-4 w-4 text-gray-500" />
+                    <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Email</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
                       <p className="font-medium">{user.email}</p>
                     </div>
                   </div>
@@ -287,18 +355,18 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-3">
-                  <CreditCard className="h-4 w-4 text-gray-500" />
+                  <CreditCard className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Carnet de Conducir</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Carnet de Conducir</p>
                     <Badge variant={user.carnetConducir === 'SI' ? 'default' : 'secondary'}>
                       {user.carnetConducir === 'SI' ? 'Sí' : 'No'}
                     </Badge>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Car className="h-4 w-4 text-gray-500" />
+                  <Car className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm text-gray-600">Vehículo Propio</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Vehículo Propio</p>
                     <Badge variant={user.vehiculoPropio === 'SI' ? 'default' : 'secondary'}>
                       {user.vehiculoPropio === 'SI' ? 'Sí' : 'No'}
                     </Badge>
@@ -317,31 +385,31 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {user.porcentajeDiscapacidad && (
                         <div>
-                          <p className="text-sm text-gray-600">Porcentaje</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Porcentaje</p>
                           <Badge variant="destructive">{user.porcentajeDiscapacidad}%</Badge>
                         </div>
                       )}
                       {user.tipoDiscapacidad && (
                         <div>
-                          <p className="text-sm text-gray-600">Tipo</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Tipo</p>
                           <p className="font-medium">{user.tipoDiscapacidad}</p>
                         </div>
                       )}
                       {user.entidadDerivacion && (
                         <div>
-                          <p className="text-sm text-gray-600">Entidad de Derivación</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Entidad de Derivación</p>
                           <p className="font-medium">{user.entidadDerivacion}</p>
                         </div>
                       )}
                       {user.tecnicoDerivacion && (
                         <div>
-                          <p className="text-sm text-gray-600">Técnico de Derivación</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Técnico de Derivación</p>
                           <p className="font-medium">{user.tecnicoDerivacion}</p>
                         </div>
                       )}
                       {user.colectivo && (
                         <div className="md:col-span-2">
-                          <p className="text-sm text-gray-600">Colectivo</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Colectivo</p>
                           <p className="font-medium">{user.colectivo}</p>
                         </div>
                       )}
@@ -354,9 +422,9 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                 <>
                   <Separator />
                   <div className="flex items-center gap-3">
-                    <FileText className="h-4 w-4 text-gray-500" />
+                    <FileText className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-sm text-gray-600">Currículum</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Currículum</p>
                       <Button asChild variant="link" className="p-0 h-auto">
                         <a href={`/api/users/${user.id}/curriculum/file`} target="_blank" rel="noopener noreferrer">
                           {user.curriculumFileName}
@@ -382,15 +450,15 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
               <CardContent className="space-y-6">
                 <div>
                   <h4 className="font-semibold mb-2">1. Composición Familiar</h4>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700 whitespace-pre-wrap">{user.socioEconomicData.composicionFamiliar}</p>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{user.socioEconomicData.composicionFamiliar}</p>
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold mb-2">2. Situación Económica</h4>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700 whitespace-pre-wrap">{user.socioEconomicData.situacionEconomica}</p>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{user.socioEconomicData.situacionEconomica}</p>
                   </div>
                 </div>
 
@@ -402,15 +470,15 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                         <div key={member.id} className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                              <p className="text-sm text-gray-600">Número</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Número</p>
                               <p className="font-medium">{member.numero}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Tipo</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Tipo</p>
                               <p className="font-medium">{member.tipo}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Cantidad</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Cantidad</p>
                               <p className="font-medium">{member.cantidad != null ? `€${member.cantidad.toFixed(2)}` : '—'}</p>
                             </div>
                           </div>
@@ -423,8 +491,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                 {user.socioEconomicData.otrasCircunstancias && (
                   <div>
                     <h4 className="font-semibold mb-2">3. Otras Situaciones y Circunstancias de Interés</h4>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700 whitespace-pre-wrap">{user.socioEconomicData.otrasCircunstancias}</p>
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{user.socioEconomicData.otrasCircunstancias}</p>
                     </div>
                   </div>
                 )}
@@ -434,8 +502,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             <Card>
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No hay datos socio-económicos registrados</p>
+                  <FileText className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">No hay datos socio-económicos registrados</p>
                 </div>
               </CardContent>
             </Card>
@@ -455,14 +523,14 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-600">Nivel de Formación</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Nivel de Formación</p>
                       <Badge variant="outline" className="text-sm">
                         {user.educationData.formacionAcademica.replace(/_/g, ' ')}
                       </Badge>
                     </div>
                     {user.educationData.anioFinalizacion && (
                       <div>
-                        <p className="text-sm text-gray-600">Año de Finalización</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Año de Finalización</p>
                         <p className="font-medium">{user.educationData.anioFinalizacion}</p>
                       </div>
                     )}
@@ -470,16 +538,16 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   
                   {user.educationData.especificacionOtros && (
                     <div>
-                      <p className="text-sm text-gray-600">Especificación</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Especificación</p>
                       <p className="font-medium">{user.educationData.especificacionOtros}</p>
                     </div>
                   )}
 
                   {user.educationData.experienciaLaboralPrevia && (
                     <div>
-                      <p className="text-sm text-gray-600 mb-2">Experiencia Laboral Previa</p>
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-gray-700 whitespace-pre-wrap">{user.educationData.experienciaLaboralPrevia}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Experiencia Laboral Previa</p>
+                      <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{user.educationData.experienciaLaboralPrevia}</p>
                       </div>
                     </div>
                   )}
@@ -497,19 +565,19 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                         <div key={course.id} className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm text-gray-600">Curso</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Curso</p>
                               <p className="font-medium">{course.nombreCurso}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Duración</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Duración</p>
                               <p className="font-medium">{course.duracionHoras} horas</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Entidad</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Entidad</p>
                               <p className="font-medium">{course.entidad}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-600">Fecha de Realización</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Fecha de Realización</p>
                               <p className="font-medium">{formatFecha(course.fechaRealizacion)}</p>
                             </div>
                           </div>
@@ -524,8 +592,8 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             <Card>
               <CardContent className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <GraduationCap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No hay datos formativos registrados</p>
+                  <GraduationCap className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">No hay datos formativos registrados</p>
                 </div>
               </CardContent>
             </Card>
@@ -549,7 +617,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   </div>
                   <div className="flex items-end">
                     <div className="space-y-2 w-48">
-                      <label className="text-sm font-medium text-gray-700">Fecha de la entrada</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha de la entrada</label>
                       <Input
                         type="date"
                         value={newEntryDate}
@@ -558,7 +626,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                       />
                     </div>
                     <div className="space-y-2 w-20 ml-4">
-                      <label className="text-sm font-medium text-gray-700">Horas</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas</label>
                       <Input
                         type="number"
                         min={0}
@@ -570,7 +638,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                       />
                     </div>
                     <div className="space-y-2 w-24 ml-2">
-                      <label className="text-sm font-medium text-gray-700">Minutos</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minutos</label>
                       <Input
                         type="number"
                         min={0}
@@ -595,31 +663,106 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                 ) : diaryEntries.length > 0 ? (
                   <ul className="space-y-4">
                     {diaryEntries.map((entry) => (
-                      <li key={entry.id} className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-gray-500">{formatFecha(entry.date)}</p>
-                          <div className="flex items-center gap-2">
-                            {entry.horas != null && (
-                              <Badge variant="secondary">{formatDuracion(entry.horas)}</Badge>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              title="Eliminar entrada"
-                              disabled={isDeletingEntryId === entry.id}
-                              onClick={() => handleDeleteEntry(entry.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                      <li key={entry.id} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                        {editingEntryId === entry.id ? (
+                          <div className="space-y-3">
+                            <Textarea
+                              rows={4}
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                            />
+                            <div className="flex flex-wrap items-end gap-3">
+                              <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fecha</label>
+                                <Input
+                                  type="date"
+                                  value={editDate}
+                                  onChange={(e) => setEditDate(e.target.value)}
+                                  max={new Date().toISOString().split('T')[0]}
+                                  className="w-44"
+                                />
+                              </div>
+                              <div className="space-y-1 w-20">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Horas</label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={24}
+                                  step={1}
+                                  placeholder="0"
+                                  value={editHoras}
+                                  onChange={(e) => setEditHoras(e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-1 w-24">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Minutos</label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={59}
+                                  step={5}
+                                  placeholder="0"
+                                  value={editMinutos}
+                                  onChange={(e) => setEditMinutos(e.target.value)}
+                                />
+                              </div>
+                              <div className="flex gap-2 ml-auto">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isUpdatingEntryId === entry.id}
+                                  onClick={handleCancelEdit}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  disabled={isUpdatingEntryId === entry.id}
+                                  onClick={() => handleUpdateEntry(entry.id)}
+                                >
+                                  {isUpdatingEntryId === entry.id ? "Guardando..." : "Guardar"}
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{formatFecha(entry.date)}</p>
+                              <div className="flex items-center gap-2">
+                                {entry.horas != null && (
+                                  <Badge variant="secondary">{formatDuracion(entry.horas)}</Badge>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                                  title="Editar entrada"
+                                  disabled={isDeletingEntryId === entry.id}
+                                  onClick={() => handleStartEdit(entry)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Eliminar entrada"
+                                  disabled={isDeletingEntryId === entry.id}
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="mt-1 whitespace-pre-wrap">{entry.content}</p>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No hay entradas en el diario.</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No hay entradas en el diario.</p>
                 )}
               </div>
             </CardContent>

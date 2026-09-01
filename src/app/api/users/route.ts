@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { normalizeNationality } from '@/lib/data/nationalities'
 
 export async function GET(request: NextRequest) {
   try {
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         apellidos: data.apellidos,
         source: data.source,
         fechaNacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : new Date(),
-        nacionalidad: data.nacionalidad,
+        nacionalidad: normalizeNationality(data.nacionalidad),
         documentoIdentidad: data.documentoIdentidad,
         numeroSeguridadSocial: data.numeroSeguridadSocial,
         sexo: data.sexo,

@@ -145,7 +145,7 @@ export function CurriculumUploader({
           dark:border-gray-600 dark:hover:border-gray-500 dark:bg-gray-800 dark:hover:bg-gray-700`}
       >
         <input {...getInputProps()} />
-        <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
+        <UploadCloud className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
         {isDragActive ? (
           <p className="mt-2 text-gray-600 dark:text-gray-300">Suelta el archivo aquí...</p>
         ) : (
@@ -157,7 +157,7 @@ export function CurriculumUploader({
       {(file || existingCurriculumFileName) && (
         <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileIcon className="h-5 w-5 text-gray-500" />
+            <FileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{currentFileName}</span>
           </div>
           {file ? ( // Si es un archivo nuevo, mostrar botón para subir
