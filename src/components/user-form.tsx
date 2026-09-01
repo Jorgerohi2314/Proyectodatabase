@@ -51,7 +51,7 @@ const socioEconomicDataSchema = z.object({
 
 const educationDataSchema = z.object({
   formacionAcademica: z.enum([
-    "SIN_ESTUDIOS", "ESTUDIOS_PRIMARIOS", "CERTIFICADO_ESCOLARIDAD", "EGB", "ESO",
+    "SIN_ESTUDIOS", "ESTUDIOS_PRIMARIOS", "CERTIFICADO_PROFESIONALIDAD", "CERTIFICADO_ESCOLARIDAD", "EGB", "ESO",
     "BACHILLER", "FPI_CICLO_GRADO_MEDIO", "FPII_CICLO_GRADO_SUPERIOR",
     "DIPLOMADO_ING_TECNICO", "LICENCIADO_ING_SUPERIOR", "OTROS"
   ]).default("SIN_ESTUDIOS"),
@@ -606,7 +606,8 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="SIN_ESTUDIOS">Sin estudios</SelectItem>
-                            <SelectItem value="ESTUDIOS_PRIMARIOS">Estudios primarios</SelectItem>
+<SelectItem value="ESTUDIOS_PRIMARIOS">Estudios primarios</SelectItem>
+                            <SelectItem value="CERTIFICADO_PROFESIONALIDAD">Certificado de Profesionalidad</SelectItem>
                             <SelectItem value="CERTIFICADO_ESCOLARIDAD">Certificado de escolaridad</SelectItem>
                             <SelectItem value="EGB">E.G.B</SelectItem>
                             <SelectItem value="ESO">E.S.O</SelectItem>

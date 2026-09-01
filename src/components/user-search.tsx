@@ -127,6 +127,7 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
                 <SelectItem value="TODAS">Todas</SelectItem>
                 <SelectItem value="SIN_ESTUDIOS">Sin Estudios</SelectItem>
                 <SelectItem value="ESTUDIOS_PRIMARIOS">Estudios Primarios</SelectItem>
+                <SelectItem value="CERTIFICADO_PROFESIONALIDAD">Certificado de Profesionalidad</SelectItem>
                 <SelectItem value="CERTIFICADO_ESCOLARIDAD">Certificado de Escolaridad</SelectItem>
                 <SelectItem value="EGB">E.G.B.</SelectItem>
                 <SelectItem value="ESO">E.S.O.</SelectItem>
