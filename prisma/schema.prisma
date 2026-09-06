@@ -66,6 +66,7 @@ model UserProfile {
   email                    String?
   carnetConducir           YesNo    @default(NO)
   vehiculoPropio           YesNo    @default(NO)
+  garantiaJuvenil          YesNo    @default(NO)
   
   // Discapacidad
   tieneDiscapacidad        YesNo    @default(NO)

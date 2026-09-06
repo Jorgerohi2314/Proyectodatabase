@@ -4,6 +4,7 @@ import React from 'react';
 import PillNav, { PillNavItem } from './pills-nav';
 import Clock from './clock';
 import { ThemeToggle } from './theme-toggle';
+import Link from 'next/link';
 import '../styles/pills-nav.css';
 
 interface HeaderProps {
@@ -21,6 +22,11 @@ const Header: React.FC<HeaderProps> = ({ onCreateUser }) => {
       label: 'Estadísticas',
       href: '/stats',
       ariaLabel: 'Ver estadísticas de inserción',
+    },
+    {
+      label: 'Progreso',
+      href: '/progreso',
+      ariaLabel: 'Ver progreso de horas y objetivos',
     },
   ];
 

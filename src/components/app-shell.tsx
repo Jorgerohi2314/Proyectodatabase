@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { LogOut, LayoutDashboard, BarChart3 } from "lucide-react"
+import { LogOut, LayoutDashboard, BarChart3, CalendarClock } from "lucide-react"
 
 import {
   Sidebar,
@@ -39,6 +39,7 @@ export function AppShell({ children, title, actions }: AppShellProps) {
   const nav = [
     { label: "Inicio", href: "/", icon: LayoutDashboard },
     { label: "Estadísticas", href: "/stats", icon: BarChart3 },
+    { label: "Progreso", href: "/progreso", icon: CalendarClock },
   ]
 
   return (

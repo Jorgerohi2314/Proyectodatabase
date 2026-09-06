@@ -14,13 +14,14 @@ import { toast } from "sonner"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
-import { getLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year";
+import { getUserLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year";
 
 interface UserWithRelations extends UserProfile {
   socioEconomicData?: { id: string; composicionFamiliar: string; situacionEconomica: string; otrasCircunstancias?: string; }
   educationData?: { id:string; formacionAcademica: string; anioFinalizacion?: number; especificacionOtros?: string; experienciaLaboralPrevia?: string; }
   complementaryCourses?: Array<{ id: string; nombreCurso: string; duracionHoras: number; entidad: string; fechaRealizacion: Date; }>
   incomeMembers?: Array<{ id: string; numero: number; tipo: string; cantidad: number; }>
+  diaryEntries?: Array<{ date: Date }>
 }
 
 export default function Home() {
@@ -35,15 +36,19 @@ export default function Home() {
 
   const filteredUsers = useMemo(() => {
     if (!activeLaboralYear) return users
-    return users.filter(user => getLaboralYear(user.updatedAt) === activeLaboralYear)
+    return users.filter(user => {
+      const latestDiaryDate = user.diaryEntries?.[0]?.date
+      return getUserLaboralYear(user.updatedAt, latestDiaryDate) === activeLaboralYear
+    })
   }, [users, activeLaboralYear])
 
   const usersByYear = useMemo(() => {
     const groups: Record<string, UserWithRelations[]> = {}
     users.forEach(user => {
-      const year = getLaboralYear(user.updatedAt)
-      if (!groups[year]) groups[year] = []
-      groups[year].push(user)
+      const latestDiaryDate = user.diaryEntries?.[0]?.date
+      const year = getUserLaboralYear(user.updatedAt, latestDiaryDate)
+      if (year && !groups[year]) groups[year] = []
+      if (year) groups[year].push(user)
     })
     return groups
   }, [users])

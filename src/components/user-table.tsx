@@ -20,14 +20,16 @@ import {
 // ... (keep UserCard component for now, it might be useful for a responsive view later or other parts of the app)
 
 export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, loading = false }: UserTableProps) {
-  const [sortConfig, setSortConfig] = useState<{ key: keyof UserProfile; direction: 'asc' | 'desc' } | null>({ key: 'createdAt', direction: 'desc' })
+  // Sort key can be a UserProfile field or 'effectiveUpdate' (added by API)
+  type SortKey = keyof UserProfile | 'effectiveUpdate'
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'effectiveUpdate', direction: 'desc' })
 
   const sortedUsers = useMemo(() => {
     let sortableUsers = [...users]
     if (sortConfig !== null) {
       sortableUsers.sort((a, b) => {
-        const aValue = a[sortConfig.key]
-        const bValue = b[sortConfig.key]
+        const aValue = a[sortConfig.key as keyof typeof a]
+        const bValue = b[sortConfig.key as keyof typeof b]
 
         if (aValue === null || aValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
         if (bValue === null || bValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
@@ -54,7 +56,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
     return sortableUsers
   }, [users, sortConfig])
 
-  const requestSort = (key: keyof UserProfile) => {
+  const requestSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc'
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc'
@@ -62,7 +64,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
     setSortConfig({ key, direction })
   }
   
-  const getSortIndicator = (key: keyof UserProfile) => {
+  const getSortIndicator = (key: SortKey) => {
     if (!sortConfig || sortConfig.key !== key) {
       return <ArrowUpDown className="h-4 w-4 ml-2 opacity-30" />;
     }
@@ -134,8 +136,8 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
             <TableHead onClick={() => requestSort('nombre')} className="cursor-pointer">
               <div className="flex items-center">Nombre {getSortIndicator('nombre')}</div>
             </TableHead>
-            <TableHead onClick={() => requestSort('createdAt')} className="cursor-pointer">
-              <div className="flex items-center">Fecha alta {getSortIndicator('createdAt')}</div>
+            <TableHead onClick={() => requestSort('effectiveUpdate')} className="cursor-pointer">
+              <div className="flex items-center">Última act. {getSortIndicator('effectiveUpdate')}</div>
             </TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Teléfono</TableHead>
@@ -153,7 +155,7 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
             <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
               <TableCell className="font-medium" onClick={() => onView(user)}>{user.nombre} {user.apellidos}</TableCell>
               <TableCell>
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : <span className="text-gray-400 dark:text-gray-500">N/A</span>}
+                {user.effectiveUpdate ? new Date(user.effectiveUpdate).toLocaleDateString('es-ES') : user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('es-ES') : <span className="text-gray-400 dark:text-gray-500">N/A</span>}
               </TableCell>
               <TableCell>
                 {user.email ? (

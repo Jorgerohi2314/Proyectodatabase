@@ -72,6 +72,7 @@ export async function PUT(
           email: data.email,
           carnetConducir: data.carnetConducir,
           vehiculoPropio: data.vehiculoPropio,
+          garantiaJuvenil: data.garantiaJuvenil ?? 'NO',
           tieneDiscapacidad: data.tieneDiscapacidad,
           porcentajeDiscapacidad: data.porcentajeDiscapacidad,
           tipoDiscapacidad: data.tipoDiscapacidad,

@@ -18,6 +18,32 @@ export function getLaboralYear(date: Date | string): string {
   return `${startShort}/${endShort}`;
 }
 
+/**
+ * Determines the laboral year for a user based on either their updatedAt date
+ * or their latest diary entry date. If either date falls within a laboral year,
+ * the user belongs to that year.
+ */
+export function getUserLaboralYear(updatedAt: Date | string, latestDiaryEntryDate?: Date | string | null): string | null {
+  const updatedAtYear = getLaboralYear(updatedAt);
+  
+  if (latestDiaryEntryDate) {
+    const diaryYear = getLaboralYear(latestDiaryEntryDate);
+    // If diary entry is in a different (more recent) year, use that
+    // Compare by converting to comparable format
+    if (compareLaboralYears(diaryYear, updatedAtYear) > 0) {
+      return diaryYear;
+    }
+  }
+  
+  return updatedAtYear;
+}
+
+function compareLaboralYears(a: string, b: string): number {
+  const [aStart] = a.split('/');
+  const [bStart] = b.split('/');
+  return parseInt(aStart, 10) - parseInt(bStart, 10);
+}
+
 export function getLaboralYearRange(label: string): { start: Date; end: Date } {
   // Label format: "25/26"
   const [startShort, endShort] = label.split('/');

@@ -11,7 +11,7 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { Users, Globe, MapPin, Building2, Filter, Clock } from "lucide-react"
 import Link from "next/link"
 import { AppShell } from "@/components/app-shell"
-import { getLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year"
+import { getUserLaboralYear, sortLaboralYears } from "@/lib/utils/laboral-year"
 import { normalizeNationality } from "@/lib/data/nationalities"
 
 type UserRow = { id: string; nombre: string; apellidos: string; sector: string | null; empresa: string | null }

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
 
 interface DiaryEntry {
@@ -372,6 +372,17 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                     </Badge>
                   </div>
                 </div>
+                {calcularEdad(user.fechaNacimiento) <= 30 && (
+                  <div className="flex items-center gap-3">
+                    <Award className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Garantía Juvenil</p>
+                      <Badge variant={user.garantiaJuvenil === 'SI' ? 'default' : 'secondary'}>
+                        {user.garantiaJuvenil === 'SI' ? 'Sí' : 'No'}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {user.tieneDiscapacidad === 'SI' && (

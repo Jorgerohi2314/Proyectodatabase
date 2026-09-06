@@ -12,7 +12,18 @@ export async function GET(request: NextRequest) {
       db.userProfile.count({ where: whereBase }),
       db.userProfile.findMany({
         where: whereBase,
-        select: { id: true, nombre: true, apellidos: true, sector: true, empresa: true },
+        select: { 
+          id: true, 
+          nombre: true, 
+          apellidos: true, 
+          sector: true, 
+          empresa: true,
+          diaryEntries: {
+            orderBy: { date: 'desc' },
+            take: 1,
+            select: { date: true },
+          },
+        },
         orderBy: { createdAt: 'desc' }
       }),
       db.userProfile.groupBy({

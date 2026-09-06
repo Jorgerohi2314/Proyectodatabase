@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   email TEXT,
   carnetConducir TEXT NOT NULL DEFAULT 'NO',
   vehiculoPropio TEXT NOT NULL DEFAULT 'NO',
+  garantiaJuvenil TEXT NOT NULL DEFAULT 'NO',
   tieneDiscapacidad TEXT NOT NULL DEFAULT 'NO',
   porcentajeDiscapacidad INTEGER,
   tipoDiscapacidad TEXT,

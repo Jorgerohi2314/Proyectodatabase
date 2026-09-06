@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { CurriculumUploader } from "./curriculum-uploader"
 import { NationalityCombobox } from "./nationality-combobox"
 import { normalizeNationality } from "@/lib/data/nationalities"
+import { calcularEdad } from "@/lib/utils/edad"
 import Stepper, { Step } from "./stepper"
 
 const personalDataSchema = z.object({
@@ -35,6 +36,7 @@ const personalDataSchema = z.object({
   email: z.union([z.literal(""), z.string().email("El formato del email no es válido")]),
   carnetConducir: z.enum(["SI", "NO"]).default("NO"),
   vehiculoPropio: z.enum(["SI", "NO"]).default("NO"),
+  garantiaJuvenil: z.enum(["SI", "NO"]).default("NO"),
   tieneDiscapacidad: z.enum(["SI", "NO"]).default("NO"),
   porcentajeDiscapacidad: z.number({ invalid_type_error: "El porcentaje debe ser un número" }).nullable().optional(),
   tipoDiscapacidad: z.string().optional(),
@@ -129,6 +131,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
         sexo: "HOMBRE",
         carnetConducir: "NO",
         vehiculoPropio: "NO",
+        garantiaJuvenil: "NO",
         tieneDiscapacidad: "NO",
         source: "PROPIO",
       },
@@ -186,6 +189,7 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
           email: user.email || "",
           carnetConducir: normalizeYesNo(user.carnetConducir) as any,
           vehiculoPropio: normalizeYesNo(user.vehiculoPropio) as any,
+          garantiaJuvenil: normalizeYesNo((user as any).garantiaJuvenil) as any,
           tieneDiscapacidad: normalizeYesNo(user.tieneDiscapacidad) as any,
           porcentajeDiscapacidad: user.porcentajeDiscapacidad ?? undefined,
           tipoDiscapacidad: user.tipoDiscapacidad || "",
@@ -232,6 +236,9 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
   }, [user, reset])
 
   const tieneDiscapacidad = watch("personalData.tieneDiscapacidad")
+  const fechaNacimiento = watch("personalData.fechaNacimiento")
+  const edadUsuario = fechaNacimiento ? calcularEdad(fechaNacimiento) : null
+  const mostrarGarantiaJuvenil = edadUsuario !== null && edadUsuario <= 30
   const formacionAcademica = watch("educationData.formacionAcademica") as any
   const insertado = watch("insercion.insertado")
 
@@ -474,7 +481,24 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                     <Input id="numeroSeguridadSocial" {...register("personalData.numeroSeguridadSocial")} />
                     {errors.personalData?.numeroSeguridadSocial && <p className="text-red-500 text-xs">{errors.personalData.numeroSeguridadSocial.message}</p>}
                   </div>
-                  <div></div>
+                  {mostrarGarantiaJuvenil && (
+                    <div>
+                      <Label>Garantía Juvenil</Label>
+                      <Controller
+                        name="personalData.garantiaJuvenil"
+                        control={control}
+                        render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="SI">Sí</SelectItem>
+                              <SelectItem value="NO">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                  )}
 
                   {/* Fila 6 - Discapacidad */}
                   <div className="lg:col-span-4">

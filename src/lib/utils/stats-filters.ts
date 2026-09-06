@@ -19,16 +19,33 @@ export function buildInsercionWhere(searchParams: URLSearchParams): any {
     whereBase.sector = sector
   }
 
-  // Filter by laboral year using updatedAt
+  // Filter by laboral year using updatedAt OR latest diary entry date
   if (laboralYear) {
     const [startShort, endShort] = laboralYear.split('/')
     const startYear = 2000 + parseInt(startShort, 10)
     const endYear = 2000 + parseInt(endShort, 10)
 
-    whereBase.updatedAt = {
-      gte: new Date(startYear, 7, 15), // August 15
-      lt: new Date(endYear, 6, 15), // July 15
-    }
+    const startDate = new Date(startYear, 7, 15) // August 15
+    const endDate = new Date(endYear, 6, 15) // July 15
+
+    whereBase.OR = [
+      {
+        updatedAt: {
+          gte: startDate,
+          lt: endDate,
+        },
+      },
+      {
+        diaryEntries: {
+          some: {
+            date: {
+              gte: startDate,
+              lt: endDate,
+            },
+          },
+        },
+      },
+    ]
   }
 
   return whereBase

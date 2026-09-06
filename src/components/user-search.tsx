@@ -20,6 +20,8 @@ export interface SearchFilters {
   apellidos?: string
   formacionAcademica?: string
   experienciaLaboralPrevia?: string
+  garantiaJuvenil?: string
+  edadMax30?: string
 }
 
 export function UserSearch({ onSearch, onClear }: UserSearchProps) {
@@ -148,6 +150,40 @@ export function UserSearch({ onSearch, onClear }: UserSearchProps) {
               onChange={(e) => setFilters({ ...filters, experienciaLaboralPrevia: e.target.value })}
               className="h-9"
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Garantía Juvenil</label>
+            <Select
+              value={filters.garantiaJuvenil || "TODAS"}
+              onValueChange={(value) => setFilters({ ...filters, garantiaJuvenil: value === "TODAS" ? "" : value })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODAS">Todas</SelectItem>
+                <SelectItem value="SI">Sí</SelectItem>
+                <SelectItem value="NO">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Edad</label>
+            <Select
+              value={filters.edadMax30 || "TODAS"}
+              onValueChange={(value) => setFilters({ ...filters, edadMax30: value === "TODAS" ? "" : value })}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TODAS">Todas</SelectItem>
+                <SelectItem value="true">30 años o menos</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { normalizeNationality } from '@/lib/data/nationalities'
+import { calcularEdad } from '@/lib/utils/edad'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,6 +12,8 @@ export async function GET(request: NextRequest) {
       apellidos: searchParams.get('apellidos') || undefined,
       formacionAcademica: searchParams.get('formacionAcademica') || undefined,
       experienciaLaboralPrevia: searchParams.get('experienciaLaboralPrevia') || undefined,
+      garantiaJuvenil: searchParams.get('garantiaJuvenil') || undefined,
+      edadMax30: searchParams.get('edadMax30') || undefined,
     }
 
     const whereClause: any = {}
@@ -22,6 +25,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (filters.garantiaJuvenil) {
+      whereClause.garantiaJuvenil = filters.garantiaJuvenil
+    }
+
     const users = await db.userProfile.findMany({
       where: whereClause,
       include: {
@@ -29,11 +36,27 @@ export async function GET(request: NextRequest) {
         educationData: true,
         complementaryCourses: true,
         incomeMembers: true,
+        diaryEntries: {
+          orderBy: { date: 'desc' },
+          take: 1,
+          select: { date: true },
+        },
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
     })
+
+    // Calculate effective last update for each user (max of updatedAt and latest diary entry)
+    const usersWithEffectiveUpdate = users.map(user => {
+      const latestDiaryDate = user.diaryEntries[0]?.date
+      const effectiveUpdate = latestDiaryDate && new Date(latestDiaryDate) > new Date(user.updatedAt)
+        ? new Date(latestDiaryDate)
+        : user.updatedAt
+      return { ...user, effectiveUpdate }
+    })
+
+    // Sort by effective update descending (most recent first)
+    usersWithEffectiveUpdate.sort((a, b) => 
+      new Date(b.effectiveUpdate).getTime() - new Date(a.effectiveUpdate).getTime()
+    )
 
     // Helper for accent and case insensitive comparison
     const normalizeText = (text: string) => {
@@ -41,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter in memory for text fields to support full accent/case insensitivity
-    const filteredUsers = users.filter(user => {
+    const filteredUsers = usersWithEffectiveUpdate.filter(user => {
       let matches = true
 
       if (filters.nombre) {
@@ -60,6 +83,11 @@ export async function GET(request: NextRequest) {
         const userExperiencia = normalizeText(user.educationData?.experienciaLaboralPrevia || '')
         const filterExperiencia = normalizeText(filters.experienciaLaboralPrevia)
         if (!userExperiencia.includes(filterExperiencia)) matches = false
+      }
+
+      if (matches && filters.edadMax30) {
+        const edad = calcularEdad(user.fechaNacimiento as unknown as Date)
+        if (edad > 30) matches = false
       }
 
       return matches
@@ -97,6 +125,7 @@ export async function POST(request: NextRequest) {
         email: data.email,
         carnetConducir: data.carnetConducir,
         vehiculoPropio: data.vehiculoPropio,
+        garantiaJuvenil: data.garantiaJuvenil ?? 'NO',
         tieneDiscapacidad: data.tieneDiscapacidad,
         porcentajeDiscapacidad: data.porcentajeDiscapacidad,
         tipoDiscapacidad: data.tipoDiscapacidad,
