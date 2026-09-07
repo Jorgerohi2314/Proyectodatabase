@@ -73,6 +73,9 @@ export async function GET(
         educationData: true,
         complementaryCourses: true,
         incomeMembers: true,
+        diaryEntries: {
+          orderBy: { date: 'desc' }
+        }
       }
     })
 
@@ -281,36 +284,49 @@ export async function GET(
       })
     }
 
-    // === TABLA DE SEGUIMIENTO VACÍA ===
-    yPosition = addSectionTitle(pdf, 'SEGUIMIENTO DE ACTUACIONES', yPosition)
-    yPosition = checkPageBreak(pdf, yPosition, margin, 80)
-    const tableX = leftColumn
-    const tableWidth = maxWidth
-    const colWidths = [30, 25, 55, 60] // Suma 170 = maxWidth
-    const rowHeight = 10
-    const headerHeight = 11
-
-    // Dibujar encabezados
-    const headers = ['Fecha', 'Duración', 'Tipo de acción', 'Notas']
-    let currentX = tableX
-    pdf.setFont('helvetica', 'bold')
-    headers.forEach((h, i) => {
-      pdf.rect(currentX, yPosition, colWidths[i], headerHeight)
-      pdf.text(h, currentX + 2, yPosition + 7)
-      currentX += colWidths[i]
-    })
-    pdf.setFont('helvetica', 'normal')
-    yPosition += headerHeight
-
-    // Dibujar 10 filas vacías
-    for (let r = 0; r < 10; r++) {
-      yPosition = checkPageBreak(pdf, yPosition, margin, rowHeight + 5)
-      let cx = tableX
-      for (let i = 0; i < colWidths.length; i++) {
-        pdf.rect(cx, yPosition, colWidths[i], rowHeight)
-        cx += colWidths[i]
-      }
-      yPosition += rowHeight
+    // === ENTRADAS DE DIARIO ===
+    if (user.diaryEntries && user.diaryEntries.length > 0) {
+      yPosition = addSectionTitle(pdf, 'ENTRADAS DE DIARIO', yPosition)
+      
+      user.diaryEntries.forEach((entry, index) => {
+        yPosition = checkPageBreak(pdf, yPosition, margin, 50)
+        
+        // Fecha de la entrada
+        const entryDate = new Date(entry.date).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        })
+        pdf.setFont('helvetica', 'bold')
+        pdf.text(`Entrada ${index + 1} - ${entryDate}`, leftColumn, yPosition)
+        yPosition += 10
+        
+        // Horas si existen
+        if (entry.horas !== null && entry.horas !== undefined) {
+          pdf.setFont('helvetica', 'normal')
+          pdf.text(`Horas: ${entry.horas}`, rightColumn, yPosition - 10)
+        }
+        
+        // Contenido de la entrada
+        pdf.setFont('helvetica', 'normal')
+        yPosition = addTextWithPageBreak(pdf, entry.content, leftColumn, yPosition, maxWidth, 6)
+        yPosition += 12
+        
+        // Línea separadora entre entradas
+        if (index < user.diaryEntries.length - 1) {
+          yPosition = checkPageBreak(pdf, yPosition, margin, 10)
+          pdf.setLineWidth(0.3)
+          pdf.line(leftColumn, yPosition, 190, yPosition)
+          yPosition += 10
+        }
+      })
+    } else {
+      yPosition = addSectionTitle(pdf, 'ENTRADAS DE DIARIO', yPosition)
+      yPosition = checkPageBreak(pdf, yPosition, margin, 20)
+      pdf.setFont('helvetica', 'italic')
+      pdf.text('No hay entradas de diario registradas.', leftColumn, yPosition)
+      pdf.setFont('helvetica', 'normal')
+      yPosition += 14
     }
 
     // Pie de página

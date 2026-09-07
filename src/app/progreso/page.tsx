@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Palmtree } from "lucide-react"
 import { AppShell } from "@/components/app-shell"
 import { ProtectedRoute } from "@/components/protected-route"
 import { cn } from "@/lib/utils"
@@ -11,8 +11,10 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 
 const TOTAL_HOURS_TARGET = 1246
 const TOTAL_WORKING_DAYS = 248
+const VACATION_DAYS_ALLOWANCE = 30
 const DAILY_TARGET = TOTAL_HOURS_TARGET / TOTAL_WORKING_DAYS
 const WEEKLY_TARGET = DAILY_TARGET * 5
+const ADJUSTED_TOTAL_HOURS_TARGET = DAILY_TARGET * (TOTAL_WORKING_DAYS - VACATION_DAYS_ALLOWANCE)
 
 // Período oficial: 1 sep 2026 - 31 ago 2027
 const PERIOD_START = new Date(2026, 8, 1) // 1 septiembre 2026
@@ -60,6 +62,7 @@ interface DayEntry {
   isWorkingDay: boolean
   isHoliday: boolean
   isWeekend: boolean
+  isVacation: boolean
   isToday: boolean
 }
 
@@ -76,13 +79,17 @@ function isHoliday(date: Date): boolean {
   return ALL_HOLIDAYS.includes(key)
 }
 
+function isVacation(date: Date, vacationDays: Set<string>): boolean {
+  return vacationDays.has(formatDateKey(date))
+}
+
 function isWeekend(date: Date): boolean {
   const day = date.getDay()
   return day === 0 || day === 6
 }
 
-function isWorkingDay(date: Date): boolean {
-  return !isWeekend(date) && !isHoliday(date)
+function isWorkingDay(date: Date, vacationDays: Set<string>): boolean {
+  return !isWeekend(date) && !isHoliday(date) && !isVacation(date, vacationDays)
 }
 
 function getWeekNumber(date: Date): number {
@@ -129,6 +136,8 @@ function getMonthName(date: Date): string {
 
 export default function ProgresoPage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([])
+  const [vacationDays, setVacationDays] = useState<Set<string>>(new Set())
+  const [vacationError, setVacationError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const now = new Date()
@@ -154,23 +163,62 @@ export default function ProgresoPage() {
     return start
   })
 
-  const fetchEntries = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch("/api/diary-entries", { cache: "no-store" })
-      if (res.ok) {
-        const data = await res.json()
-        setEntries(data)
+      const [entriesRes, vacationsRes] = await Promise.all([
+        fetch("/api/diary-entries", { cache: "no-store" }),
+        fetch("/api/vacation-days", { cache: "no-store" }),
+      ])
+      if (entriesRes.ok) {
+        setEntries(await entriesRes.json())
+      }
+      if (vacationsRes.ok) {
+        const days: string[] = await vacationsRes.json()
+        setVacationDays(new Set(days))
       }
     } catch (error) {
-      console.error("Error fetching diary entries:", error)
+      console.error("Error fetching data:", error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchEntries()
+    fetchData()
   }, [])
+
+  const toggleVacation = async (date: Date) => {
+    const key = formatDateKey(date)
+    const isActive = vacationDays.has(key)
+    setVacationError(null)
+    try {
+      let res: Response
+      if (isActive) {
+        res = await fetch(`/api/vacation-days?date=${key}`, { method: "DELETE" })
+      } else {
+        res = await fetch("/api/vacation-days", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: key }),
+        })
+      }
+      if (res.ok) {
+        const next = new Set(vacationDays)
+        if (isActive) {
+          next.delete(key)
+        } else {
+          next.add(key)
+        }
+        setVacationDays(next)
+      } else {
+        const data = await res.json()
+        setVacationError(data.error || "No se pudo actualizar el día de vacaciones.")
+      }
+    } catch (error) {
+      console.error("Error toggling vacation day:", error)
+      setVacationError("Error de conexión al guardar el día de vacaciones.")
+    }
+  }
 
   const navigateWeek = (direction: number) => {
     const newWeekStart = new Date(currentWeekStart)
@@ -224,15 +272,16 @@ export default function ProgresoPage() {
         dateKey,
         entries: dayEntries,
         totalHours,
-        isWorkingDay: isWorkingDay(date),
+        isWorkingDay: isWorkingDay(date, vacationDays),
         isHoliday: isHoliday(date),
         isWeekend: isWeekend(date),
+        isVacation: isVacation(date, vacationDays),
         isToday: date.getTime() === today.getTime(),
       })
     }
 
     return days
-  }, [entries, weekStart])
+  }, [entries, weekStart, vacationDays])
 
   const weekStats = useMemo(() => {
     const workingDays = weekDays.filter(d => d.isWorkingDay).length
@@ -254,7 +303,7 @@ export default function ProgresoPage() {
     // Calculate accumulated target up to end of this week (from period start)
     let accumulatedTarget = 0
     for (let d = new Date(PERIOD_START); d <= weekEnd; d.setDate(d.getDate() + 1)) {
-      if (isWorkingDay(d)) accumulatedTarget += DAILY_TARGET
+      if (isWorkingDay(d, vacationDays)) accumulatedTarget += DAILY_TARGET
     }
     
     const accumulatedDifference = accumulatedHours - accumulatedTarget
@@ -273,15 +322,15 @@ export default function ProgresoPage() {
       accumulatedPercentage,
       weekNumber: getWeekNumber(weekStart),
     }
-  }, [weekDays, entries, weekEnd])
+  }, [weekDays, entries, weekEnd, vacationDays])
 
   const totalStats = useMemo(() => {
     const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
-    const difference = totalHours - TOTAL_HOURS_TARGET
-    const percentage = (totalHours / TOTAL_HOURS_TARGET) * 100
+    const difference = totalHours - ADJUSTED_TOTAL_HOURS_TARGET
+    const percentage = (totalHours / ADJUSTED_TOTAL_HOURS_TARGET) * 100
     const status = difference >= 0 ? "POR ENCIMA" : "POR DEBAJO"
     
-    return { totalHours, totalTarget: TOTAL_HOURS_TARGET, difference, percentage, status }
+    return { totalHours, totalTarget: ADJUSTED_TOTAL_HOURS_TARGET, difference, percentage, status }
   }, [entries])
 
   const isCurrentWeek = useMemo(() => {
@@ -401,6 +450,24 @@ export default function ProgresoPage() {
                     )}
                   </p>
                 </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="flex items-center gap-1"><Palmtree className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" /> Bolsa de vacaciones</span>
+                    <span className="font-medium">{vacationDays.size} / {VACATION_DAYS_ALLOWANCE} usados</span>
+                  </div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-teal-500 transition-all duration-500"
+                      style={{ width: `${Math.min(100, (vacationDays.size / VACATION_DAYS_ALLOWANCE) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Pulsa el botón de un día laborable para marcarlo como vacaciones.
+                  </p>
+                  {vacationError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{vacationError}</p>
+                  )}
+                </div>
               </div>
             </CardHeader>
 
@@ -414,9 +481,10 @@ export default function ProgresoPage() {
                       "relative p-3 rounded-lg border min-h-[180px] flex flex-col",
                       day.isHoliday && "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800",
                       day.isWeekend && "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700",
+                      day.isVacation && "bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700",
                       day.isToday && "ring-2 ring-primary border-primary",
-                      !day.isWorkingDay && !day.isHoliday && !day.isWeekend && "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800",
-                      day.isWorkingDay && !day.isHoliday && !day.isWeekend && "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
+                      !day.isWorkingDay && !day.isHoliday && !day.isWeekend && !day.isVacation && "bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800",
+                      day.isWorkingDay && !day.isHoliday && !day.isWeekend && !day.isVacation && "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                     )}
                   >
                     {/* Day header */}
@@ -427,8 +495,22 @@ export default function ProgresoPage() {
                         </span>
                         {day.isToday && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Hoy</span>}
                         {day.isHoliday && <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded">Festivo</span>}
+                        {day.isVacation && <span className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 px-1.5 py-0.5 rounded">Vacaciones</span>}
                       </div>
                       <span className="text-sm text-muted-foreground font-mono">{formatDateDisplay(day.date)}</span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 mb-1">
+                      {day.isVacation && (
+                        <Button variant="outline" size="sm" onClick={() => toggleVacation(day.date)} className="text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30">
+                          Quitar vacaciones
+                        </Button>
+                      )}
+                      {!day.isVacation && !day.isWeekend && !day.isHoliday && (
+                        <Button variant="outline" size="sm" onClick={() => toggleVacation(day.date)} className="text-muted-foreground hover:text-teal-600 dark:hover:text-teal-400">
+                          <Palmtree className="h-3.5 w-3.5 mr-1" />
+                          Vacaciones
+                        </Button>
+                      )}
                     </div>
 
                     {/* Progress bar for the day */}
@@ -453,7 +535,7 @@ export default function ProgresoPage() {
                     <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
                       {day.entries.length === 0 ? (
                         <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">
-                          {day.isHoliday ? "Día festivo" : day.isWeekend ? "Fin de semana" : "Sin atenciones"}
+                          {day.isHoliday ? "Día festivo" : day.isWeekend ? "Fin de semana" : day.isVacation ? "Vacaciones" : "Sin atenciones"}
                         </p>
                       ) : (
                         day.entries.map((entry, entryIndex) => (
@@ -558,6 +640,10 @@ export default function ProgresoPage() {
                       Fin de semana
                     </li>
                     <li className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded border border-teal-300 bg-teal-50 dark:bg-teal-900/30"></span>
+                      Vacaciones (marcadas por el usuario)
+                    </li>
+                    <li className="flex items-center gap-2">
                       <span className="inline-block w-3 h-3 rounded border border-green-300 bg-green-50 dark:bg-green-900/10"></span>
                       Día laborable (hoy)
                     </li>
@@ -600,6 +686,9 @@ export default function ProgresoPage() {
                   </ul>
                   <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     Período: 01/09/2026 - 31/08/2027. Día objetivo: 5,02h. Semana (5 días): ~25,12h.
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    El objetivo total se ajusta restando la bolsa de vacaciones disponible ({VACATION_DAYS_ALLOWANCE} días). Objetivo ajustado: {formatHours(ADJUSTED_TOTAL_HOURS_TARGET)}.
                   </p>
                 </div>
               </div>

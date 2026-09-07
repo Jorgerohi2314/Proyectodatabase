@@ -174,3 +174,11 @@ model DiaryEntry {
 
   @@map("diary_entries")
 }
+
+model VacationDay {
+  id        String   @id @default(cuid())
+  date      DateTime @unique
+  createdAt DateTime @default(now())
+
+  @@map("vacation_days")
+}
