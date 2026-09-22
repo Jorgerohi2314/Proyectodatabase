@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award, ShieldCheck } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
 
 interface DiaryEntry {
@@ -295,6 +295,13 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Documento de Identidad</p>
                     <p className="font-medium">{user.documentoIdentidad}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <ShieldCheck className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Número de Seguridad Social</p>
+                    <p className="font-medium">{user.numeroSeguridadSocial || 'No disponible'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
