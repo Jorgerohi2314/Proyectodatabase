@@ -461,7 +461,7 @@ export default function StatsPage() {
                         <TableCell>{u.empresa ?? 'Sin especificar'}</TableCell>
                         <TableCell className="text-right">
                           <Button asChild size="sm" variant="outline">
-                            <Link href={`/?view=${u.id}`}>Ver</Link>
+                            <Link href={`/usuarios/${u.id}`}>Ver</Link>
                           </Button>
                         </TableCell>
                       </TableRow>

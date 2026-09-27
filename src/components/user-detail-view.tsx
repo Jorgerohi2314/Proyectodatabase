@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award, ShieldCheck } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award, ShieldCheck, Clock } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
+import { formatDuracion } from "@/lib/utils/horas"
 
 interface DiaryEntry {
   id: string;
@@ -22,11 +24,13 @@ interface DiaryEntry {
 
 interface UserDetailViewProps {
   user: any
-  onClose: () => void
+  onClose?: () => void
 }
 
 export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const { toast } = useToast();
+  const router = useRouter();
+  const handleClose = () => (onClose ? onClose() : router.push("/"));
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [newEntryContent, setNewEntryContent] = useState("");
   const [newEntryDate, setNewEntryDate] = useState(new Date().toISOString().split('T')[0]);
@@ -211,17 +215,14 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
     }
   };
 
-  const formatDuracion = (horas: number) => {
-    const h = Math.floor(horas)
-    const m = Math.round((horas - h) * 60)
-    if (h === 0) return `${m} min`
-    if (m === 0) return `${h} h`
-    return `${h} h ${m} min`
-  }
+  const totalHoras = useMemo(
+    () => diaryEntries.reduce((total, entry) => total + (entry.horas ?? 0), 0),
+    [diaryEntries]
+  )
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 rounded-lg">
             <User className="h-6 w-6 text-blue-600" />
@@ -233,10 +234,23 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
             <p className="text-gray-600 dark:text-gray-400">Detalles completos del usuario</p>
           </div>
         </div>
-        <Button variant="outline" onClick={onClose}>
-          <X className="h-4 w-4 mr-2" />
-          Cerrar
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="rounded-lg border-2 border-blue-700 bg-blue-600 px-4 py-2 text-center text-white shadow-md dark:border-blue-400 dark:bg-blue-600">
+            <p className="text-xs font-semibold uppercase tracking-wide text-blue-100">
+              Horas registradas
+            </p>
+            <p className="text-2xl font-bold tabular-nums text-white">
+              {isLoadingEntries ? "—" : formatDuracion(totalHoras)}
+            </p>
+          </div>
+          <Badge variant="secondary" className="h-fit">
+            {diaryEntries.length} {diaryEntries.length === 1 ? "entrada" : "entradas"}
+          </Badge>
+          <Button variant="outline" onClick={handleClose}>
+            <X className="h-4 w-4 mr-2" />
+            Volver
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="personal" className="w-full">
@@ -620,7 +634,13 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
         <TabsContent value="diary">
           <Card>
             <CardHeader>
-              <CardTitle>Diario de Seguimiento</CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>Diario de Seguimiento</CardTitle>
+                <Badge variant="outline" className="gap-2 text-sm">
+                  <Clock className="h-3.5 w-3.5" />
+                  Total: {formatDuracion(totalHoras)}
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">

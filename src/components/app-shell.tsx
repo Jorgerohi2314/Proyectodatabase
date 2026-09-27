@@ -37,7 +37,7 @@ export function AppShell({ children, title, actions }: AppShellProps) {
   const { logout } = useAuth()
 
   const nav = [
-    { label: "Inicio", href: "/", icon: LayoutDashboard },
+    { label: "Inicio", href: "/", icon: LayoutDashboard, matchPrefix: "/usuarios" },
     { label: "Estadísticas", href: "/stats", icon: BarChart3 },
     { label: "Progreso", href: "/progreso", icon: CalendarClock },
   ]
@@ -64,7 +64,7 @@ export function AppShell({ children, title, actions }: AppShellProps) {
               <SidebarMenu>
                 {nav.map((item) => {
                   const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const isActive = pathname === item.href || Boolean(item.matchPrefix && pathname.startsWith(item.matchPrefix))
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>

@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Download, Eye, ArrowUpDown } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ArrowUpDown } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { calcularEdad } from "@/lib/utils/edad"
+import { formatDuracion } from "@/lib/utils/horas"
 import { LoadingSpinner } from "./loading-spinner"
 import {
   Table,
@@ -19,10 +20,23 @@ import {
 
 // ... (keep UserCard component for now, it might be useful for a responsive view later or other parts of the app)
 
-export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, loading = false }: UserTableProps) {
-  // Sort key can be a UserProfile field or 'effectiveUpdate' (added by API)
-  type SortKey = keyof UserProfile | 'effectiveUpdate'
+type UserTableUser = UserProfile & {
+  effectiveUpdate?: string | Date | null
+  totalHoras?: number | null
+}
+
+interface UserTableProps {
+  users: UserTableUser[]
+  loading?: boolean
+}
+
+export function UserTable({ users, loading = false }: UserTableProps) {
+  // Sort key can be a UserProfile field, 'effectiveUpdate' or 'totalHoras' (both added by API)
+  type SortKey = keyof UserProfile | 'effectiveUpdate' | 'totalHoras'
+  const router = useRouter()
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'effectiveUpdate', direction: 'desc' })
+
+  const goToUser = (id: string) => router.push(`/usuarios/${id}`)
 
   const sortedUsers = useMemo(() => {
     let sortableUsers = [...users]
@@ -147,13 +161,26 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
             <TableHead onClick={() => requestSort('fechaNacimiento')} className="cursor-pointer">
               <div className="flex items-center">Edad {getSortIndicator('fechaNacimiento')}</div>
             </TableHead>
-            <TableHead className="text-right">Acciones</TableHead>
+            <TableHead onClick={() => requestSort('totalHoras')} className="cursor-pointer">
+              <div className="flex items-center">Horas {getSortIndicator('totalHoras')}</div>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedUsers.map((user) => (
-            <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-              <TableCell className="font-medium" onClick={() => onView(user)}>{user.nombre} {user.apellidos}</TableCell>
+            <TableRow
+              key={user.id}
+              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              tabIndex={0}
+              onClick={() => goToUser(user.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  goToUser(user.id)
+                }
+              }}
+            >
+              <TableCell className="font-medium">{user.nombre} {user.apellidos}</TableCell>
               <TableCell>
                 {user.effectiveUpdate ? new Date(user.effectiveUpdate).toLocaleDateString('es-ES') : user.updatedAt ? new Date(user.updatedAt).toLocaleDateString('es-ES') : <span className="text-gray-400 dark:text-gray-500">N/A</span>}
               </TableCell>
@@ -175,21 +202,8 @@ export function UserTable({ users, onEdit, onDelete, onView, onDownloadPDF, load
               <TableCell>{user.telefono1 || <span className="text-gray-400 dark:text-gray-500">N/A</span>}</TableCell>
               <TableCell>{user.localidad || <span className="text-gray-400 dark:text-gray-500">N/A</span>}</TableCell>
               <TableCell>{calcularEdad(user.fechaNacimiento as unknown as Date)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end">
-                  <Button variant="ghost" size="sm" onClick={() => onView(user)} className="h-8 w-8 p-0" title="Ver detalles">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(user)} className="h-8 w-8 p-0" title="Editar">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDownloadPDF(user.id)} className="h-8 w-8 p-0" title="Descargar PDF">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onDelete(user.id)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700" title="Eliminar">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              <TableCell className="tabular-nums">
+                {user.totalHoras ? formatDuracion(user.totalHoras) : <span className="text-gray-400 dark:text-gray-500">0 h</span>}
               </TableCell>
             </TableRow>
           ))}

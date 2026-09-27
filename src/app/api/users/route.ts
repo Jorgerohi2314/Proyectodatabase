@@ -44,13 +44,22 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    // Total de horas registradas en el diario, agrupado por usuario
+    const hoursByUser = await db.diaryEntry.groupBy({
+      by: ['userProfileId'],
+      _sum: { horas: true },
+    })
+    const totalHorasByUser = new Map(
+      hoursByUser.map((row) => [row.userProfileId, row._sum.horas ?? 0])
+    )
+
     // Calculate effective last update for each user (max of updatedAt and latest diary entry)
     const usersWithEffectiveUpdate = users.map(user => {
       const latestDiaryDate = user.diaryEntries[0]?.date
       const effectiveUpdate = latestDiaryDate && new Date(latestDiaryDate) > new Date(user.updatedAt)
         ? new Date(latestDiaryDate)
         : user.updatedAt
-      return { ...user, effectiveUpdate }
+      return { ...user, effectiveUpdate, totalHoras: totalHorasByUser.get(user.id) ?? 0 }
     })
 
     // Sort by effective update descending (most recent first)

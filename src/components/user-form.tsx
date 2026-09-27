@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, type ReactNode } from "react"
 import { useForm, Controller, SubmitHandler, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -17,7 +17,43 @@ import { CurriculumUploader } from "./curriculum-uploader"
 import { NationalityCombobox } from "./nationality-combobox"
 import { normalizeNationality } from "@/lib/data/nationalities"
 import { calcularEdad } from "@/lib/utils/edad"
-import Stepper, { Step } from "./stepper"
+
+const SECTION_KEYS = [
+  "personalData",
+  "socioEconomicData",
+  "educationData",
+  "complementaryCourses",
+  "insercion",
+] as const
+
+type SectionKey = (typeof SECTION_KEYS)[number]
+
+function FormSection({
+  sectionKey,
+  title,
+  description,
+  registerRef,
+  children,
+}: {
+  sectionKey: SectionKey
+  title: string
+  description: string
+  registerRef: (key: SectionKey) => (el: HTMLElement | null) => void
+  children: ReactNode
+}) {
+  return (
+    <section
+      ref={registerRef(sectionKey)}
+      className="scroll-mt-4 space-y-6 rounded-lg border border-border/60 bg-card p-5 shadow-sm"
+    >
+      <div className="space-y-1 border-b border-border/60 pb-3">
+        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {children}
+    </section>
+  )
+}
 
 const personalDataSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio"),
@@ -111,9 +147,13 @@ interface UserFormProps {
 
 export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormProps) {
   const { toast } = useToast()
-  const [currentStep, setCurrentStep] = useState(1)
   const [curriculumFile, setCurriculumFile] = useState<File | null>(null)
   const [curriculumFileName, setCurriculumFileName] = useState<string | null>(user?.curriculumFileName ?? null)
+  const sectionRefs = useRef<Partial<Record<SectionKey, HTMLElement | null>>>({})
+  const registerSection =
+    (key: SectionKey) => (el: HTMLElement | null) => {
+      sectionRefs.current[key] = el
+    }
 
   const {
     register,
@@ -293,15 +333,13 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
       duration: 9000,
     })
 
-    // Navegar al primer paso con error
-    if (errors.personalData) {
-      setCurrentStep(1);
-    } else if (errors.socioEconomicData || errors.incomeMembers) {
-      setCurrentStep(2);
-    } else if (errors.educationData || errors.complementaryCourses) {
-      setCurrentStep(3);
-    } else if (errors.insercion) {
-      setCurrentStep(4);
+    // Desplazarse a la primera sección con errores
+    const firstErroredSection = SECTION_KEYS.find((key) => errors[key])
+    if (firstErroredSection) {
+      sectionRefs.current[firstErroredSection]?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
     }
   }
 
@@ -316,26 +354,20 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
 
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{user ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</h2>
         <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
       </div>
       <form onSubmit={handleSubmit(onSubmit, onError)} className="flex-1 flex flex-col min-h-0">
-        <div className="flex-1 min-h-0 px-6 pb-6">
-          <Stepper
-            currentStep={currentStep}
-            setCurrentStep={setCurrentStep}
-            onFinalStepCompleted={() => handleSubmit(onSubmit, onError)()}
-            backButtonText="Anterior"
-            nextButtonText="Siguiente"
-            className="flex-1 flex flex-col"
-          >
-            <Step>
-                <div className="space-y-2 mb-6">
-                    <h3 className="text-xl font-semibold">Datos Personales</h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Información básica y de contacto del usuario.</p>
-                </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+          <div className="space-y-6">
+            <FormSection
+              sectionKey="personalData"
+              title="Datos Personales"
+              description="Información básica y de contacto del usuario."
+              registerRef={registerSection}
+            >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
                   {/* Fila 1 */}
                   <div>
@@ -550,12 +582,13 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                     </>
                   )}
                 </div>
-            </Step>
-            <Step>
-            <div className="space-y-2 mb-6">
-                <h3 className="text-xl font-semibold">Datos Socio-Económicos</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Información sobre el entorno familiar y económico.</p>
-            </div>
+            </FormSection>
+            <FormSection
+              sectionKey="socioEconomicData"
+              title="Datos Socio-Económicos"
+              description="Información sobre el entorno familiar y económico."
+              registerRef={registerSection}
+            >
             <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="composicionFamiliar">Composición Familiar</Label>
@@ -612,12 +645,13 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                   {errors.socioEconomicData?.otrasCircunstancias && <p className="text-red-500 text-xs">{errors.socioEconomicData.otrasCircunstancias.message}</p>}
                 </div>
             </div>
-          </Step>
-          <Step>
-             <div className="space-y-2 mb-6">
-                <h3 className="text-xl font-semibold">Datos Formativos y Laborales</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Formación académica, complementaria y experiencia laboral.</p>
-            </div>
+            </FormSection>
+            <FormSection
+              sectionKey="educationData"
+              title="Datos Formativos y Laborales"
+              description="Formación académica, complementaria y experiencia laboral."
+              registerRef={registerSection}
+            >
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div>
@@ -707,12 +741,13 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                   </Button>
                 </div>
             </div>
-          </Step>
-          <Step>
-            <div className="space-y-2 mb-6">
-                <h3 className="text-xl font-semibold">Inserción</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Estado de la inserción laboral del usuario.</p>
-            </div>
+            </FormSection>
+            <FormSection
+              sectionKey="insercion"
+              title="Inserción"
+              description="Estado de la inserción laboral del usuario."
+              registerRef={registerSection}
+            >
             <div className="space-y-4 max-w-lg">
                 <div className="space-y-2">
                   <Label>¿Inserción Laboral?</Label>
@@ -767,34 +802,40 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                   </>
                 )}
             </div>
-          </Step>
-          <Step>
-             <div className="space-y-2 mb-6">
-                <h3 className="text-xl font-semibold">Currículum</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Sube y gestiona el currículum del usuario.</p>
+            </FormSection>
+            <section className="space-y-6 rounded-lg border border-border/60 bg-card p-5 shadow-sm">
+              <div className="space-y-1 border-b border-border/60 pb-3">
+                <h3 className="text-lg font-semibold text-foreground">Currículum</h3>
+                <p className="text-sm text-muted-foreground">Sube y gestiona el currículum del usuario.</p>
+              </div>
+              <div className="max-w-lg">
+                <Card className="bg-[#F4F1F8]/50 dark:bg-gray-800/50">
+                  <CardHeader><CardTitle>Gestión de Currículum</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Sube un archivo (.doc, .docx, max 5MB).
+                    </p>
+                    <CurriculumUploader
+                      userId={user?.id}
+                      existingCurriculumFileName={curriculumFileName}
+                      onUploadComplete={handleCurriculumUploadComplete}
+                      onDeleteComplete={handleCurriculumDeleteComplete}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+
+            <div className="sticky bottom-0 flex justify-end gap-2 border-t border-border/60 bg-[#F4F1F8]/95 py-3 backdrop-blur dark:bg-gray-800/95">
+              <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? "Guardando..." : "Guardar Usuario"}
+              </Button>
             </div>
-            <div className="max-w-lg mx-auto">
-              <Card className="bg-[#F4F1F8]/50 dark:bg-gray-800/50">
-                <CardHeader><CardTitle>Gestión de Currículum</CardTitle></CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Sube un archivo (.doc, .docx, max 5MB).
-                  </p>
-                  <CurriculumUploader
-                    userId={user?.id}
-                    existingCurriculumFileName={curriculumFileName}
-                    onUploadComplete={handleCurriculumUploadComplete}
-                    onDeleteComplete={handleCurriculumDeleteComplete}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </Step>
-          </Stepper>
+          </div>
         </div>
       </form>
     </div>
   )
 }
-// NOTE: The content for the tabs "personal", "socio", "education", and "insercion" is omitted for brevity, but it's the same as the original file.
 
