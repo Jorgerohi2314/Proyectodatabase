@@ -45,4 +45,30 @@ describe('Base de datos de prueba (SQLite)', () => {
     expect(await db.educationData.count()).toBe(0)
     expect(await db.userProfile.count()).toBe(0)
   })
+
+  it('guarda una anotación por día y la actualiza sin duplicar', async () => {
+    const date = new Date('2026-10-05T00:00:00Z')
+
+    await db.dayAnnotation.create({ data: { date, content: 'Cita médica por la mañana' } })
+    await db.dayAnnotation.upsert({
+      where: { date },
+      create: { date, content: 'Otra nota' },
+      update: { content: 'Cita médica y gestoría por la tarde' },
+    })
+
+    const annotations = await db.dayAnnotation.findMany()
+
+    expect(annotations).toHaveLength(1)
+    expect(annotations[0].content).toBe('Cita médica y gestoría por la tarde')
+  })
+
+  it('elimina la anotación de un día concreto', async () => {
+    const date = new Date('2026-10-06T00:00:00Z')
+    await db.dayAnnotation.create({ data: { date, content: 'Media jornada' } })
+
+    const created = await db.dayAnnotation.findUniqueOrThrow({ where: { date } })
+    await db.dayAnnotation.delete({ where: { id: created.id } })
+
+    expect(await db.dayAnnotation.findUnique({ where: { date } })).toBeNull()
+  })
 })

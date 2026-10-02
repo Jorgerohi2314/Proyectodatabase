@@ -45,6 +45,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const [editHoras, setEditHoras] = useState("");
   const [editMinutos, setEditMinutos] = useState("");
   const [isUpdatingEntryId, setIsUpdatingEntryId] = useState<string | null>(null);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
 
   useEffect(() => {
     async function fetchDiaryEntries() {
@@ -220,6 +221,34 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
     [diaryEntries]
   )
 
+  const handleDeleteUser = async () => {
+    if (!confirm("¿Seguro que quieres eliminar este usuario? Esta acción no se puede deshacer.")) {
+      return;
+    }
+    setIsDeletingUser(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error("No se pudo eliminar el usuario.");
+      }
+      toast({
+        title: "Éxito",
+        description: "Usuario eliminado correctamente.",
+      });
+      handleClose();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: error.message,
+      });
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -246,9 +275,17 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
           <Badge variant="secondary" className="h-fit">
             {diaryEntries.length} {diaryEntries.length === 1 ? "entrada" : "entradas"}
           </Badge>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isDeletingUser}>
             <X className="h-4 w-4 mr-2" />
             Volver
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteUser}
+            disabled={isDeletingUser}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {isDeletingUser ? "Eliminando..." : "Eliminar usuario"}
           </Button>
         </div>
       </div>

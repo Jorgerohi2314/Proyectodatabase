@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Palmtree } from "lucide-react"
+import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Palmtree, StickyNote, Trash2 } from "lucide-react"
 import { AppShell } from "@/components/app-shell"
 import { ProtectedRoute } from "@/components/protected-route"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+
+const ANNOTATION_MAX_LENGTH = 500
 
 const TOTAL_HOURS_TARGET = 1246
 const TOTAL_WORKING_DAYS = 248
@@ -54,11 +58,17 @@ interface DiaryEntry {
   userName: string
 }
 
+interface DayAnnotation {
+  date: string
+  content: string
+}
+
 interface DayEntry {
   date: Date
   dateKey: string
   entries: DiaryEntry[]
   totalHours: number
+  annotation: string | null
   isWorkingDay: boolean
   isHoliday: boolean
   isWeekend: boolean
@@ -130,6 +140,16 @@ function formatDayName(date: Date): string {
   return date.toLocaleDateString("es-ES", { weekday: "short" })
 }
 
+function formatDateKeyLong(dateKey: string): string {
+  const date = new Date(`${dateKey}T00:00:00`)
+  return date.toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+}
+
 function getMonthName(date: Date): string {
   return date.toLocaleDateString("es-ES", { month: "long", year: "numeric" }).toUpperCase()
 }
@@ -138,6 +158,11 @@ export default function ProgresoPage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([])
   const [vacationDays, setVacationDays] = useState<Set<string>>(new Set())
   const [vacationError, setVacationError] = useState<string | null>(null)
+  const [annotations, setAnnotations] = useState<Map<string, string>>(new Map())
+  const [annotationError, setAnnotationError] = useState<string | null>(null)
+  const [annotationDialog, setAnnotationDialog] = useState<{ dateKey: string } | null>(null)
+  const [annotationDraft, setAnnotationDraft] = useState("")
+  const [savingAnnotation, setSavingAnnotation] = useState(false)
   const [loading, setLoading] = useState(true)
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const now = new Date()
@@ -165,9 +190,10 @@ export default function ProgresoPage() {
 
   const fetchData = async () => {
     try {
-      const [entriesRes, vacationsRes] = await Promise.all([
+      const [entriesRes, vacationsRes, annotationsRes] = await Promise.all([
         fetch("/api/diary-entries", { cache: "no-store" }),
         fetch("/api/vacation-days", { cache: "no-store" }),
+        fetch("/api/day-annotations", { cache: "no-store" }),
       ])
       if (entriesRes.ok) {
         setEntries(await entriesRes.json())
@@ -175,6 +201,10 @@ export default function ProgresoPage() {
       if (vacationsRes.ok) {
         const days: string[] = await vacationsRes.json()
         setVacationDays(new Set(days))
+      }
+      if (annotationsRes.ok) {
+        const data: DayAnnotation[] = await annotationsRes.json()
+        setAnnotations(new Map(data.map(a => [a.date, a.content])))
       }
     } catch (error) {
       console.error("Error fetching data:", error)
@@ -217,6 +247,71 @@ export default function ProgresoPage() {
     } catch (error) {
       console.error("Error toggling vacation day:", error)
       setVacationError("Error de conexión al guardar el día de vacaciones.")
+    }
+  }
+
+  const openAnnotationDialog = (day: DayEntry) => {
+    setAnnotationError(null)
+    setAnnotationDraft(annotations.get(day.dateKey) ?? "")
+    setAnnotationDialog({ dateKey: day.dateKey })
+  }
+
+  const closeAnnotationDialog = () => {
+    setAnnotationDialog(null)
+    setAnnotationDraft("")
+    setAnnotationError(null)
+  }
+
+  const saveAnnotation = async () => {
+    if (!annotationDialog) return
+    const { dateKey } = annotationDialog
+    const content = annotationDraft.trim()
+    if (!content) {
+      setAnnotationError("La anotación no puede estar vacía.")
+      return
+    }
+    setSavingAnnotation(true)
+    setAnnotationError(null)
+    try {
+      const res = await fetch("/api/day-annotations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dateKey, content }),
+      })
+      if (res.ok) {
+        const saved: DayAnnotation = await res.json()
+        setAnnotations(prev => new Map(prev).set(saved.date, saved.content))
+        closeAnnotationDialog()
+      } else {
+        const data = await res.json()
+        setAnnotationError(data.error || "No se pudo guardar la anotación.")
+      }
+    } catch (error) {
+      console.error("Error saving day annotation:", error)
+      setAnnotationError("Error de conexión al guardar la anotación.")
+    } finally {
+      setSavingAnnotation(false)
+    }
+  }
+
+  const deleteAnnotation = async (dateKey: string) => {
+    setAnnotationError(null)
+    try {
+      const res = await fetch(`/api/day-annotations?date=${dateKey}`, { method: "DELETE" })
+      if (res.ok) {
+        setAnnotations(prev => {
+          const next = new Map(prev)
+          next.delete(dateKey)
+          return next
+        })
+        if (annotationDialog?.dateKey === dateKey) closeAnnotationDialog()
+      } else {
+        const data = await res.json()
+        setAnnotationError(data.error || "No se pudo eliminar la anotación.")
+      }
+    } catch (error) {
+      console.error("Error deleting day annotation:", error)
+      setAnnotationError("Error de conexión al eliminar la anotación.")
     }
   }
 
@@ -272,6 +367,7 @@ export default function ProgresoPage() {
         dateKey,
         entries: dayEntries,
         totalHours,
+        annotation: annotations.get(dateKey) ?? null,
         isWorkingDay: isWorkingDay(date, vacationDays),
         isHoliday: isHoliday(date),
         isWeekend: isWeekend(date),
@@ -281,7 +377,7 @@ export default function ProgresoPage() {
     }
 
     return days
-  }, [entries, weekStart, vacationDays])
+  }, [entries, weekStart, vacationDays, annotations])
 
   const weekStats = useMemo(() => {
     const workingDays = weekDays.filter(d => d.isWorkingDay).length
@@ -472,6 +568,13 @@ export default function ProgresoPage() {
             </CardHeader>
 
             <CardContent>
+              <p className="mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+                <StickyNote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                Pulsa «Anotar» en cualquier día para dejar constancia de lo que ocurrió (cita médica, gestión
+                externa, media jornada…): la nota se guarda con ese día y explica por qué hay pocos o
+                ningún registro horario.
+              </p>
+
               {/* Weekly Calendar Grid */}
               <div className="grid grid-cols-5 gap-2">
                 {weekDays.map((day, index) => (
@@ -496,6 +599,7 @@ export default function ProgresoPage() {
                         {day.isToday && <span className="text-xs bg-primary text-primary-foreground px-1.5 py-0.5 rounded">Hoy</span>}
                         {day.isHoliday && <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded">Festivo</span>}
                         {day.isVacation && <span className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400 px-1.5 py-0.5 rounded">Vacaciones</span>}
+                        {day.annotation && <span className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded">Anotado</span>}
                       </div>
                       <span className="text-sm text-muted-foreground font-mono">{formatDateDisplay(day.date)}</span>
                     </div>
@@ -511,6 +615,21 @@ export default function ProgresoPage() {
                           Vacaciones
                         </Button>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openAnnotationDialog(day)}
+                        aria-label={`Anotar el día ${formatDateKeyLong(day.dateKey)}`}
+                        className={cn(
+                          "text-muted-foreground",
+                          day.annotation
+                            ? "hover:text-amber-700 dark:hover:text-amber-400 border-amber-300 dark:border-amber-700"
+                            : "hover:text-amber-600 dark:hover:text-amber-400"
+                        )}
+                      >
+                        <StickyNote className="h-3.5 w-3.5 mr-1" />
+                        {day.annotation ? "Editar nota" : "Anotar"}
+                      </Button>
                     </div>
 
                     {/* Progress bar for the day */}
@@ -531,11 +650,22 @@ export default function ProgresoPage() {
                       </div>
                     )}
 
+                    {/* Anotación del día */}
+                    {day.annotation && (
+                      <div className="mb-2 p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                        <p className="flex items-center gap-1 text-[0.7rem] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1">
+                          <StickyNote className="h-3 w-3" />
+                          Anotación
+                        </p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">{day.annotation}</p>
+                      </div>
+                    )}
+
                     {/* Entries for the day */}
                     <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
                       {day.entries.length === 0 ? (
                         <p className="text-xs text-gray-400 dark:text-gray-500 italic text-center py-4">
-                          {day.isHoliday ? "Día festivo" : day.isWeekend ? "Fin de semana" : day.isVacation ? "Vacaciones" : "Sin atenciones"}
+                          {day.isHoliday ? "Día festivo" : day.isWeekend ? "Fin de semana" : day.isVacation ? "Vacaciones" : "Sin registros horarios"}
                         </p>
                       ) : (
                         day.entries.map((entry, entryIndex) => (
@@ -675,6 +805,17 @@ export default function ProgresoPage() {
                       Entrada completa (≥5,02h)
                     </li>
                   </ul>
+                  <h5 className="font-medium mt-4 mb-2">Anotaciones:</h5>
+                  <ul className="space-y-1">
+                    <li className="flex items-center gap-2">
+                      <span className="inline-block w-3 h-3 rounded border border-amber-300 bg-amber-50 dark:bg-amber-900/30"></span>
+                      Día con nota «Anotado»
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <StickyNote className="inline h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      Explica por qué ese día tiene pocos o ningún registro horario
+                    </li>
+                  </ul>
                 </div>
                 <div>
                   <h5 className="font-medium mb-2">Festivos configurados:</h5>
@@ -694,6 +835,68 @@ export default function ProgresoPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Diálogo de anotación del día */}
+          <Dialog
+            open={annotationDialog !== null}
+            onOpenChange={open => { if (!open) closeAnnotationDialog() }}
+          >
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  Anotar el día
+                </DialogTitle>
+                <DialogDescription>
+                  {annotationDialog ? formatDateKeyLong(annotationDialog.dateKey) : ""}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-2">
+                <Textarea
+                  value={annotationDraft}
+                  onChange={e => setAnnotationDraft(e.target.value.slice(0, ANNOTATION_MAX_LENGTH))}
+                  placeholder="Ej.: cita médica por la mañana; gestión administrativa en el ayuntamiento; solo media jornada por indisposición."
+                  rows={5}
+                  disabled={savingAnnotation}
+                  aria-label="Texto de la anotación del día"
+                />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    Explica por qué este día tiene pocos o ningún registro horario.
+                  </span>
+                  <span className="font-mono">{annotationDraft.length}/{ANNOTATION_MAX_LENGTH}</span>
+                </div>
+                {annotationError && (
+                  <p className="text-xs text-red-600 dark:text-red-400">{annotationError}</p>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2 sm:justify-between">
+                {annotationDialog && annotations.has(annotationDialog.dateKey) ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => deleteAnnotation(annotationDialog.dateKey)}
+                    disabled={savingAnnotation}
+                    className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Eliminar
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={closeAnnotationDialog} disabled={savingAnnotation}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={saveAnnotation} disabled={savingAnnotation || !annotationDraft.trim()}>
+                    {savingAnnotation ? "Guardando…" : "Guardar"}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </AppShell>
     </ProtectedRoute>

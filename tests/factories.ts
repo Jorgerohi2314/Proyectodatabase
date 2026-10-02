@@ -119,6 +119,8 @@ export async function seedUsers(count = 10) {
 }
 
 export async function cleanDatabase() {
+  await db.dayAnnotation.deleteMany()
+  await db.vacationDay.deleteMany()
   await db.diaryEntry.deleteMany()
   await db.incomeMember.deleteMany()
   await db.complementaryCourse.deleteMany()

@@ -93,11 +93,25 @@ CREATE TABLE IF NOT EXISTS diary_entries (
   horas REAL,
   FOREIGN KEY (userProfileId) REFERENCES user_profiles (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE IF NOT EXISTS vacation_days (
+  id TEXT NOT NULL PRIMARY KEY,
+  date DATETIME NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS vacation_days_date_key ON vacation_days (date);
+CREATE TABLE IF NOT EXISTS day_annotations (
+  id TEXT NOT NULL PRIMARY KEY,
+  date DATETIME NOT NULL,
+  content TEXT NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS day_annotations_date_key ON day_annotations (date);
 CREATE UNIQUE INDEX IF NOT EXISTS education_data_userProfileId_key ON education_data (userProfileId);
 CREATE UNIQUE INDEX IF NOT EXISTS socio_economic_data_userProfileId_key ON socio_economic_data (userProfileId);
 `
 
-const TABLES = ['diary_entries', 'income_members', 'complementary_courses', 'education_data', 'socio_economic_data', 'user_profiles']
+const TABLES = ['day_annotations', 'vacation_days', 'diary_entries', 'income_members', 'complementary_courses', 'education_data', 'socio_economic_data', 'user_profiles']
 
 // @ts-ignore - node:sqlite disponible en Node >=22
 import { DatabaseSync } from 'node:sqlite'
