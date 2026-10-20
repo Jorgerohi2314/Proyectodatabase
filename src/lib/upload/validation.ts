@@ -189,3 +189,117 @@ export function generateSafeFilename(originalName: string, userId: string): stri
 }
 
 export { ALLOWED_MIME_TYPES, ALLOWED_EXTENSIONS, MAX_FILE_SIZE };
+
+// ============================================================================
+// Validación de imágenes para foto de perfil
+// ============================================================================
+
+const ALLOWED_IMAGE_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
+
+const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'] as const;
+const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+// Magic bytes para imágenes
+const IMAGE_MAGIC_BYTES: Record<string, Uint8Array[]> = {
+  'image/jpeg': [
+    new Uint8Array([0xFF, 0xD8, 0xFF]), // JPEG
+  ],
+  'image/png': [
+    new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]), // PNG
+  ],
+  'image/webp': [
+    new Uint8Array([0x52, 0x49, 0x46, 0x46]), // RIFF (WebP)
+  ],
+  'image/gif': [
+    new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x37, 0x61]), // GIF87a
+    new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]), // GIF89a
+  ],
+};
+
+async function detectImageMimeType(file: File): Promise<string | null> {
+  const buffer = await file.slice(0, 12).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  for (const [mimeType, signatures] of Object.entries(IMAGE_MAGIC_BYTES)) {
+    for (const signature of signatures) {
+      if (bytes.length < signature.length) continue;
+
+      let matches = true;
+      for (let i = 0; i < signature.length; i++) {
+        if (bytes[i] !== signature[i]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        // Special handling for WebP (RIFF container)
+        if (mimeType === 'image/webp') {
+          // Check for "WEBP" at offset 8
+          if (bytes.length >= 12 &&
+              bytes[8] === 0x57 && // W
+              bytes[9] === 0x45 && // E
+              bytes[10] === 0x42 && // B
+              bytes[11] === 0x50) { // P
+            return 'image/webp';
+          }
+        } else {
+          return mimeType;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Valida que el archivo sea una imagen válida para foto de perfil
+ * Verifica: tamaño, extensión, MIME type real (magic bytes)
+ */
+export async function validateImage(file: File): Promise<FileValidationResult> {
+  // 1. Validar tamaño
+  if (file.size > MAX_IMAGE_FILE_SIZE) {
+    return {
+      valid: false,
+      error: `La imagen excede el tamaño máximo permitido (${MAX_IMAGE_FILE_SIZE / (1024 * 1024)}MB)`,
+    };
+  }
+
+  if (file.size === 0) {
+    return {
+      valid: false,
+      error: 'El archivo está vacío',
+    };
+  }
+
+  // 2. Validar extensión
+  const extension = getFileExtension(file.name);
+  if (!ALLOWED_IMAGE_EXTENSIONS.includes(extension as (typeof ALLOWED_IMAGE_EXTENSIONS)[number])) {
+    return {
+      valid: false,
+      error: `Extensión no permitida: "${extension}". Solo se aceptan: ${ALLOWED_IMAGE_EXTENSIONS.join(', ')}`,
+    };
+  }
+
+  // 3. Validar MIME type real (magic bytes) - previene spoofing
+  const detectedMimeType = await detectImageMimeType(file);
+  if (!detectedMimeType || !ALLOWED_IMAGE_MIME_TYPES.includes(detectedMimeType as (typeof ALLOWED_IMAGE_MIME_TYPES)[number])) {
+    return {
+      valid: false,
+      error: `Tipo de archivo no válido. Detectado: ${detectedMimeType || 'desconocido'}. Solo se aceptan imágenes (jpg, png, webp, gif).`,
+    };
+  }
+
+  return {
+    valid: true,
+    mimeType: detectedMimeType,
+    extension,
+  };
+}
+
+export { ALLOWED_IMAGE_MIME_TYPES, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_FILE_SIZE };

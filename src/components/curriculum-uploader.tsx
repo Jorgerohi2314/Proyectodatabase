@@ -2,15 +2,16 @@
 
 import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
-import { UploadCloud, File as FileIcon, X } from "lucide-react"
+import { UploadCloud, File as FileIcon, X, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 
 interface CurriculumUploaderProps {
-  userId: string | undefined // User ID is needed for the upload endpoint
+  userId?: string // Si no existe, el archivo se subirá al guardar el usuario
   existingCurriculumFileName?: string | null
-  onUploadComplete: (fileName: string) => void
-  onDeleteComplete: () => void
+  onFileSelected?: (file: File | null) => void
+  onUploadComplete?: (fileName: string) => void
+  onDeleteComplete?: () => void
 }
 
 const MAX_SIZE_MB = 5
@@ -23,9 +24,10 @@ const ACCEPTED_FILE_TYPES = {
   'application/vnd.oasis.opendocument.text': ['.odt'],
 }
 
-export function CurriculumUploader({ 
-  userId, 
+export function CurriculumUploader({
+  userId,
   existingCurriculumFileName,
+  onFileSelected,
   onUploadComplete,
   onDeleteComplete
 }: CurriculumUploaderProps) {
@@ -33,6 +35,11 @@ export function CurriculumUploader({
   const [file, setFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const clearSelection = useCallback(() => {
+    setFile(null)
+    onFileSelected?.(null)
+  }, [onFileSelected])
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     if (fileRejections.length > 0) {
@@ -43,14 +50,17 @@ export function CurriculumUploader({
         description: firstError.code === 'file-too-large'
           ? `El archivo es demasiado grande. El tamaño máximo es de ${MAX_SIZE_MB}MB.`
           : `Tipo de archivo no permitido. Solo se aceptan documentos (pdf, doc, docx, txt, odt).`,
-      })
+      });
       return
     }
-    
+
     if (acceptedFiles.length > 0) {
       setFile(acceptedFiles[0])
+      // Si el usuario ya existe se sube al pulsar "Subir Archivo".
+      // Si es un usuario nuevo, se guarda el archivo para subirlo al guardar el perfil.
+      onFileSelected?.(acceptedFiles[0])
     }
-  }, [toast])
+  }, [toast, onFileSelected])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -59,15 +69,15 @@ export function CurriculumUploader({
     multiple: false,
   })
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (!file) return
     if (!userId) {
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Espera a que el usuario sea creado antes de subir un archivo.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "El currículum se subirá automáticamente al guardar el usuario.",
+      });
+      return;
     }
 
     setIsUploading(true)
@@ -87,7 +97,8 @@ export function CurriculumUploader({
 
       const { data: uploadData } = await response.json()
       const uploadedFileName = uploadData?.fileName || file.name
-      onUploadComplete(uploadedFileName)
+      onUploadComplete?.(uploadedFileName)
+      onFileSelected?.(null)
       setFile(null)
       toast({
         title: "Éxito",
@@ -102,9 +113,9 @@ export function CurriculumUploader({
     } finally {
       setIsUploading(false)
     }
-  }
+  }, [file, userId, onUploadComplete, onFileSelected, toast])
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!userId) return
 
     setIsDeleting(true)
@@ -118,7 +129,8 @@ export function CurriculumUploader({
         throw new Error(errorData.error || "Falló la eliminación del currículum")
       }
 
-      onDeleteComplete()
+      onDeleteComplete?.()
+      onFileSelected?.(null)
       toast({
         title: "Éxito",
         description: "Currículum eliminado correctamente.",
@@ -132,19 +144,19 @@ export function CurriculumUploader({
     } finally {
       setIsDeleting(false)
     }
-  }
+  }, [userId, onDeleteComplete, onFileSelected, toast])
 
   const currentFileName = file ? file.name : (existingCurriculumFileName || "Currículum existente")
 
   return (
     <div className="space-y-4">
-      <div 
-        {...getRootProps()} 
+      <div
+        {...getRootProps()}
         className={`p-8 border-2 border-dashed rounded-lg text-center cursor-pointer
           ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}
-          dark:border-gray-600 dark:hover:border-gray-500 dark:bg-gray-800 dark:hover:bg-gray-700`}
+          dark:border-gray-600 dark:hover:border-gray-500 dark:bg-gray-800 dark:hover:border-gray-700`}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps({ form: "none" })} />
         <UploadCloud className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
         {isDragActive ? (
           <p className="mt-2 text-gray-600 dark:text-gray-300">Suelta el archivo aquí...</p>
@@ -155,17 +167,39 @@ export function CurriculumUploader({
       </div>
 
       {(file || existingCurriculumFileName) && (
-        <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{currentFileName}</span>
+        <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <FileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{currentFileName}</span>
           </div>
-          {file ? ( // Si es un archivo nuevo, mostrar botón para subir
-             <Button onClick={handleUpload} disabled={isUploading || !userId} size="sm">
+          {file ? (
+            // Archivo nuevo seleccionado
+            userId ? (
+              <Button type="button" onClick={(e) => { e.preventDefault(); handleUpload(); }} disabled={isUploading} size="sm">
                 {isUploading ? "Subiendo..." : "Subir Archivo"}
-            </Button>
-          ) : ( // Si es un archivo existente, mostrar botón para borrar
-            <Button onClick={handleDelete} disabled={isDeleting} size="sm" variant="destructive">
+              </Button>
+            ) : (
+              // Usuario nuevo: se subirá al guardar
+              <>
+                <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Se subirá al guardar el usuario
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => { e.preventDefault(); clearSelection(); }}
+                  disabled={isUploading || isDeleting}
+                  title="Quitar archivo seleccionado"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            )
+          ) : (
+            // Archivo existente: mostrar botón para borrar
+            <Button type="button" onClick={(e) => { e.preventDefault(); handleDelete(); }} disabled={isDeleting} size="sm" variant="destructive">
               {isDeleting ? "Eliminando..." : <X className="h-4 w-4" />}
             </Button>
           )}

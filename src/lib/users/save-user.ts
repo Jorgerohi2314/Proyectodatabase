@@ -1,12 +1,14 @@
 export interface SaveUserResult {
   userId: string
   curriculumMessage: string
+  profilePictureMessage: string
 }
 
 export async function saveUser(
   userId: string | null,
   data: any,
-  curriculumFile?: File | null
+  curriculumFile?: File | null,
+  profilePictureFile?: File | null
 ): Promise<SaveUserResult> {
   const isUpdating = !!userId
   const endpoint = isUpdating ? `/api/users/${userId}` : "/api/users"
@@ -28,6 +30,7 @@ export async function saveUser(
   const savedUser = await userResponse.json()
   const savedUserId = savedUser.id
   let curriculumMessage = ""
+  let profilePictureMessage = ""
 
   if (curriculumFile && savedUserId) {
     const formData = new FormData()
@@ -46,5 +49,22 @@ export async function saveUser(
     }
   }
 
-  return { userId: savedUserId, curriculumMessage }
+  if (profilePictureFile && savedUserId) {
+    const formData = new FormData()
+    formData.append("profilePicture", profilePictureFile)
+
+    const fileResponse = await fetch(`/api/users/${savedUserId}/profile-picture`, {
+      method: "POST",
+      body: formData,
+    })
+
+    if (fileResponse.ok) {
+      profilePictureMessage = "Foto de perfil subida con éxito."
+    } else {
+      const fileError = await fileResponse.json().catch(() => null)
+      profilePictureMessage = `El perfil se guardó, pero falló la subida de la foto de perfil: ${fileError?.error ?? "error desconocido"}`
+    }
+  }
+
+  return { userId: savedUserId, curriculumMessage, profilePictureMessage }
 }

@@ -6,7 +6,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
-    "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx 2>&1",
+    "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --ext ts 2>&1",
     "build": "next build",
     "start": "NODE_ENV=production tsx server.ts 2>&1 | tee server.log",
     "lint": "next lint",

@@ -12,12 +12,17 @@ export default function NewUserPage() {
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
 
-  const handleSave = async (data: any, curriculumFile?: File | null) => {
+  const handleSave = async (data: any, curriculumFile?: File | null, profilePictureFile?: File | null) => {
     setIsSaving(true)
     try {
-      const { userId, curriculumMessage } = await saveUser(null, data, curriculumFile)
+      const { userId, curriculumMessage, profilePictureMessage } = await saveUser(
+        null,
+        data,
+        curriculumFile,
+        profilePictureFile
+      )
       toast.success("Usuario creado correctamente.", {
-        description: curriculumMessage,
+        description: [curriculumMessage, profilePictureMessage].filter(Boolean).join(" "),
       })
       router.push(`/usuarios/${userId}`)
     } catch (error: any) {

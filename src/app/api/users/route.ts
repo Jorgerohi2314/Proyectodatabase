@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
 
     const users = await db.userProfile.findMany({
       where: whereClause,
+      // Excluir los BLOB binarios: se sirven de formalazy desde /[id]/<campo>/file
+      omit: { curriculumFile: true, profilePictureFile: true },
       include: {
         socioEconomicData: true,
         educationData: true,

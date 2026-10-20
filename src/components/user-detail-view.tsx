@@ -9,8 +9,9 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award, ShieldCheck, Clock } from "lucide-react"
+import { X, User, Users, GraduationCap, FileText, Phone, Mail, MapPin, Calendar, CreditCard, Car, Accessibility, BookText, Trash2, Pencil, Award, ShieldCheck, Clock, ZoomIn } from "lucide-react"
 import { calcularEdad } from "@/lib/utils/edad"
 import { formatDuracion } from "@/lib/utils/horas"
 
@@ -46,6 +47,12 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   const [editMinutos, setEditMinutos] = useState("");
   const [isUpdatingEntryId, setIsUpdatingEntryId] = useState<string | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
+  const [showProfilePicture, setShowProfilePicture] = useState(false);
+
+  // URL de la foto con versionado para romper la cache del navegador
+  const profilePictureUrl = user?.profilePictureFileName
+    ? `/api/users/${user.id}/profile-picture/file?v=${new Date(user.updatedAt).getTime()}`
+    : null;
 
   useEffect(() => {
     async function fetchDiaryEntries() {
@@ -252,15 +259,39 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <User className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {user.nombre} {user.apellidos}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">Detalles completos del usuario</p>
+        <div className="flex items-center gap-4">
+          {profilePictureUrl ? (
+            <button
+              type="button"
+              onClick={() => setShowProfilePicture(true)}
+              title="Ampliar foto de perfil"
+              aria-label={`Ampliar foto de perfil de ${user.nombre}`}
+              className="group relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0 ring-4 ring-blue-100 dark:ring-blue-900/50 transition hover:ring-blue-300 dark:hover:ring-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 cursor-zoom-in"
+            >
+              <img
+                src={profilePictureUrl}
+                alt={`Foto de perfil de ${user.nombre}`}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100 group-focus-visible:bg-black/40 group-focus-visible:opacity-100">
+                <ZoomIn className="h-7 w-7 text-white drop-shadow" />
+              </span>
+            </button>
+          ) : (
+            <div className="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 ring-4 ring-blue-100 dark:ring-blue-900/50">
+              <User className="h-14 w-14 text-gray-400 dark:text-gray-500" />
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <User className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {user.nombre} {user.apellidos}
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">Detalles completos del usuario</p>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -503,6 +534,7 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
                   </div>
                 </>
               )}
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -844,6 +876,26 @@ export function UserDetailView({ user, onClose }: UserDetailViewProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Lightbox: vista ampliada de la foto de perfil */}
+      <Dialog open={showProfilePicture} onOpenChange={setShowProfilePicture}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Foto de perfil</DialogTitle>
+            <DialogDescription>
+              {user.nombre} {user.apellidos}
+            </DialogDescription>
+          </DialogHeader>
+          {profilePictureUrl && (
+            <img
+              src={profilePictureUrl}
+              alt={`Foto de perfil de ${user.nombre}`}
+              className="w-full max-h-[75vh] rounded-2xl object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+

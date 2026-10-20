@@ -10,6 +10,8 @@ export async function GET(
     const { id } = await params;
     const user = await db.userProfile.findUnique({
       where: { id: id },
+      // Excluir los BLOB binarios: se sirven de forma lazy desde /[id]/<campo>/file
+      omit: { curriculumFile: true, profilePictureFile: true },
       include: {
         socioEconomicData: true,
         educationData: true,

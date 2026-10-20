@@ -48,12 +48,17 @@ export default function UserDetailPage() {
     fetchUser()
   }, [fetchUser])
 
-  const handleSave = async (data: any, curriculumFile?: File | null) => {
+  const handleSave = async (data: any, curriculumFile?: File | null, profilePictureFile?: File | null) => {
     setIsSaving(true)
     try {
-      const { curriculumMessage } = await saveUser(userId, data, curriculumFile)
+      const { curriculumMessage, profilePictureMessage } = await saveUser(
+        userId,
+        data,
+        curriculumFile,
+        profilePictureFile
+      )
       toast.success("Usuario actualizado correctamente.", {
-        description: curriculumMessage,
+        description: [curriculumMessage, profilePictureMessage].filter(Boolean).join(" "),
       })
       setShowEditForm(false)
       await fetchUser()

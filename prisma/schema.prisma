@@ -89,6 +89,13 @@ model UserProfile {
   curriculumMimeType       String?
   curriculumSize           Int?
 
+  // Foto de perfil (imagen: jpg, png, webp, gif)
+  // Almacenado directamente en la BD (BLOB) para simplificar despliegue y backups
+  profilePictureFile       Bytes?
+  profilePictureFileName   String?
+  profilePictureMimeType   String?
+  profilePictureSize       Int?
+
   // Relaciones
   socioEconomicData        SocioEconomicData?
   educationData            EducationData?

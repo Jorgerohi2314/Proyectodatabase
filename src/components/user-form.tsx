@@ -14,6 +14,7 @@ import { X, Plus } from "lucide-react"
 import { UserProfile } from "@prisma/client"
 import { useToast } from "@/hooks/use-toast"
 import { CurriculumUploader } from "./curriculum-uploader"
+import { ProfilePictureUploader } from "./profile-picture-uploader"
 import { NationalityCombobox } from "./nationality-combobox"
 import { normalizeNationality } from "@/lib/data/nationalities"
 import { calcularEdad } from "@/lib/utils/edad"
@@ -140,7 +141,7 @@ interface UserWithOptionalRelations extends UserProfile {
 
 interface UserFormProps {
   user?: UserWithOptionalRelations
-  onSave: (data: any, curriculumFile?: File | null) => void
+  onSave: (data: any, curriculumFile?: File | null, profilePictureFile?: File | null) => void
   onCancel: () => void
   isSaving?: boolean
 }
@@ -149,7 +150,9 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
   const { toast } = useToast()
   const [curriculumFile, setCurriculumFile] = useState<File | null>(null)
   const [curriculumFileName, setCurriculumFileName] = useState<string | null>(user?.curriculumFileName ?? null)
+  const [profilePictureFileName, setProfilePictureFileName] = useState<string | null>(user?.profilePictureFileName ?? null)
   const sectionRefs = useRef<Partial<Record<SectionKey, HTMLElement | null>>>({})
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null)
   const registerSection =
     (key: SectionKey) => (el: HTMLElement | null) => {
       sectionRefs.current[key] = el
@@ -271,7 +274,9 @@ export function UserForm({ user, onSave, onCancel, isSaving = false }: UserFormP
         })),
       })
       setCurriculumFileName(user.curriculumFileName ?? null)
+      setProfilePictureFileName(user.profilePictureFileName ?? null)
       setCurriculumFile(null)
+      setProfilePictureFile(null)
     }
   }, [user, reset])
 
@@ -304,7 +309,7 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
       complementaryCourses: data.complementaryCourses,
       incomeMembers: data.incomeMembers,
     }
-    onSave(completeData, curriculumFile)
+    onSave(completeData, curriculumFile, profilePictureFile)
   }
 
   const onError = (errors: any) => {
@@ -350,6 +355,15 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
 
   const handleCurriculumDeleteComplete = () => {
     setCurriculumFileName(null)
+  }
+
+  const handleProfilePictureUploadComplete = (fileName: string) => {
+    setProfilePictureFileName(fileName)
+    setProfilePictureFile(null)
+  }
+
+  const handleProfilePictureDeleteComplete = () => {
+    setProfilePictureFileName(null)
   }
 
 
@@ -818,8 +832,32 @@ const onSubmit: SubmitHandler<FormData> = (data) => {
                     <CurriculumUploader
                       userId={user?.id}
                       existingCurriculumFileName={curriculumFileName}
+                      onFileSelected={setCurriculumFile}
                       onUploadComplete={handleCurriculumUploadComplete}
                       onDeleteComplete={handleCurriculumDeleteComplete}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </section>
+            <section className="space-y-6 rounded-lg border border-border/60 bg-card p-5 shadow-sm">
+              <div className="space-y-1 border-b border-border/60 pb-3">
+                <h3 className="text-lg font-semibold text-foreground">Foto de Perfil</h3>
+                <p className="text-sm text-muted-foreground">Sube y gestiona la foto de perfil del usuario.</p>
+              </div>
+              <div className="max-w-lg">
+                <Card className="bg-[#F4F1F8]/50 dark:bg-gray-800/50">
+                  <CardHeader><CardTitle>Gestión de Foto de Perfil</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Sube una imagen (.jpg, .png, .webp, .gif, max 5MB).
+                    </p>
+                    <ProfilePictureUploader
+                      userId={user?.id}
+                      existingProfilePictureFileName={profilePictureFileName}
+                      onFileSelected={setProfilePictureFile}
+                      onUploadComplete={handleProfilePictureUploadComplete}
+                      onDeleteComplete={handleProfilePictureDeleteComplete}
                     />
                   </CardContent>
                 </Card>
