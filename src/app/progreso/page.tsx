@@ -420,6 +420,38 @@ export default function ProgresoPage() {
     }
   }, [weekDays, entries, weekEnd, vacationDays])
 
+  const monthStats = useMemo(() => {
+    const monthStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1)
+    const monthEnd = new Date(weekStart.getFullYear(), weekStart.getMonth() + 1, 0)
+    monthEnd.setHours(23, 59, 59, 999)
+
+    // No contar días fuera del período oficial
+    const rangeStart = monthStart < PERIOD_START ? PERIOD_START : monthStart
+    const rangeEnd = monthEnd > PERIOD_END ? PERIOD_END : monthEnd
+
+    let workingDays = 0
+    for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
+      if (isWorkingDay(d, vacationDays)) workingDays += 1
+    }
+
+    const monthPrefix = `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, "0")}`
+    const totalHours = entries.reduce(
+      (sum, e) => (e.date.startsWith(monthPrefix) ? sum + e.hours : sum),
+      0
+    )
+    const target = workingDays * DAILY_TARGET
+    const difference = totalHours - target
+    const percentage = target > 0 ? (totalHours / target) * 100 : 0
+
+    return {
+      monthLabel: monthStart.toLocaleDateString("es-ES", { month: "long" }),
+      totalHours,
+      target,
+      difference,
+      percentage,
+    }
+  }, [entries, weekStart, vacationDays])
+
   const totalStats = useMemo(() => {
     const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
     const difference = totalHours - ADJUSTED_TOTAL_HOURS_TARGET
@@ -526,6 +558,28 @@ export default function ProgresoPage() {
                       style={{ width: `${Math.min(100, weekStats.percentage)}%` }}
                     ></div>
                   </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>
+                      Progreso mensual
+                      <span className="text-muted-foreground capitalize"> · {monthStats.monthLabel}</span>
+                    </span>
+                    <span className="font-medium">{formatHours(monthStats.totalHours)} / {formatHours(monthStats.target)} ({(monthStats.percentage).toFixed(1)}%)</span>
+                  </div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500", monthStats.difference >= 0 ? "bg-green-500" : "bg-blue-500")}
+                      style={{ width: `${Math.min(100, monthStats.percentage)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {monthStats.difference >= 0 ? (
+                      <> <CheckCircle className="inline h-3 w-3 text-green-500" /> Vas por delante del objetivo mensual </>
+                    ) : (
+                      <> <AlertTriangle className="inline h-3 w-3 text-orange-500" /> Vas por detrás del objetivo mensual </>
+                    )}
+                  </p>
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-1">
