@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Palmtree, StickyNote, Trash2 } from "lucide-react"
+import { Calendar, Clock, TrendingUp, TrendingDown, Target, AlertTriangle, CheckCircle, ChevronLeft, ChevronRight, Palmtree, StickyNote, Trash2, LayoutGrid } from "lucide-react"
 import { AppShell } from "@/components/app-shell"
 import { ProtectedRoute } from "@/components/protected-route"
 import { cn } from "@/lib/utils"
@@ -154,6 +154,11 @@ function getMonthName(date: Date): string {
   return date.toLocaleDateString("es-ES", { month: "long", year: "numeric" }).toUpperCase()
 }
 
+function formatMonthLabel(year: number, month: number): string {
+  const label = new Date(year, month, 1).toLocaleDateString("es-ES", { month: "long" })
+  return `${label.charAt(0).toUpperCase()}${label.slice(1)} ${year}`
+}
+
 export default function ProgresoPage() {
   const [entries, setEntries] = useState<DiaryEntry[]>([])
   const [vacationDays, setVacationDays] = useState<Set<string>>(new Set())
@@ -164,6 +169,8 @@ export default function ProgresoPage() {
   const [annotationDraft, setAnnotationDraft] = useState("")
   const [savingAnnotation, setSavingAnnotation] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string | null>(null)
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const now = new Date()
     // Si estamos antes del período, empezar en el inicio del período
@@ -452,6 +459,115 @@ export default function ProgresoPage() {
     }
   }, [entries, weekStart, vacationDays])
 
+  const monthlySummary = useMemo(() => {
+    const months: {
+      key: string
+      label: string
+      year: number
+      month: number
+      totalHours: number
+      target: number
+      difference: number
+      percentage: number
+    }[] = []
+
+    const cursor = new Date(PERIOD_START.getFullYear(), PERIOD_START.getMonth(), 1)
+    const lastMonth = new Date(PERIOD_END.getFullYear(), PERIOD_END.getMonth(), 1)
+
+    while (cursor <= lastMonth) {
+      const year = cursor.getFullYear()
+      const month = cursor.getMonth()
+      const key = `${year}-${String(month + 1).padStart(2, "0")}`
+
+      const monthStart = new Date(year, month, 1)
+      const monthEnd = new Date(year, month + 1, 0)
+      monthEnd.setHours(23, 59, 59, 999)
+      const rangeStart = monthStart < PERIOD_START ? PERIOD_START : monthStart
+      const rangeEnd = monthEnd > PERIOD_END ? PERIOD_END : monthEnd
+
+      let workingDays = 0
+      for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
+        if (isWorkingDay(d, vacationDays)) workingDays += 1
+      }
+
+      const totalHours = entries.reduce(
+        (sum, e) => (e.date.startsWith(key) ? sum + e.hours : sum),
+        0
+      )
+      const target = workingDays * DAILY_TARGET
+
+      months.push({
+        key,
+        label: formatMonthLabel(year, month),
+        year,
+        month,
+        totalHours,
+        target,
+        difference: totalHours - target,
+        percentage: target > 0 ? (totalHours / target) * 100 : 0,
+      })
+
+      cursor.setMonth(cursor.getMonth() + 1)
+    }
+
+    return months
+  }, [entries, vacationDays])
+
+  const selectedMonthData = useMemo(() => {
+    if (!selectedMonthKey) return null
+    const month = monthlySummary.find(m => m.key === selectedMonthKey)
+    if (!month) return null
+
+    const monthStart = new Date(month.year, month.month, 1)
+    const monthEnd = new Date(month.year, month.month + 1, 0)
+    monthEnd.setHours(23, 59, 59, 999)
+    const rangeStart = monthStart < PERIOD_START ? PERIOD_START : monthStart
+    const rangeEnd = monthEnd > PERIOD_END ? PERIOD_END : monthEnd
+
+    const weeks: {
+      weekNumber: number
+      start: Date
+      end: Date
+      totalHours: number
+      target: number
+      difference: number
+      percentage: number
+    }[] = []
+
+    for (let cursor = getWeekRange(rangeStart).start; cursor <= rangeEnd; cursor.setDate(cursor.getDate() + 7)) {
+      const { start, end } = getWeekRange(cursor)
+      if (end < rangeStart || start > rangeEnd) continue
+
+      const startKey = formatDateKey(start)
+      const endKey = formatDateKey(end)
+      const totalHours = entries.reduce(
+        (sum, e) =>
+          e.date >= startKey && e.date <= endKey && e.date.startsWith(month.key) ? sum + e.hours : sum,
+        0
+      )
+
+      // Objetivo de la parte de la semana que cae dentro del mes
+      const dayStart = start < rangeStart ? rangeStart : start
+      const dayEnd = end > rangeEnd ? rangeEnd : end
+      let target = 0
+      for (let d = new Date(dayStart); d <= dayEnd; d.setDate(d.getDate() + 1)) {
+        if (isWorkingDay(d, vacationDays)) target += DAILY_TARGET
+      }
+
+      weeks.push({
+        weekNumber: getWeekNumber(start),
+        start,
+        end,
+        totalHours,
+        target,
+        difference: totalHours - target,
+        percentage: target > 0 ? (totalHours / target) * 100 : 0,
+      })
+    }
+
+    return { ...month, weeks }
+  }, [selectedMonthKey, monthlySummary, entries, vacationDays])
+
   const totalStats = useMemo(() => {
     const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
     const difference = totalHours - ADJUSTED_TOTAL_HOURS_TARGET
@@ -475,7 +591,15 @@ export default function ProgresoPage() {
 
   return (
     <ProtectedRoute>
-      <AppShell title="Progreso">
+      <AppShell
+        title="Progreso"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setSummaryOpen(true)}>
+            <LayoutGrid className="h-4 w-4 mr-1" />
+            Resumen
+          </Button>
+        }
+      >
         <div className="space-y-6">
           {/* Resumen General */}
           <Card>
@@ -949,6 +1073,127 @@ export default function ProgresoPage() {
                   </Button>
                 </div>
               </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Diálogo de resumen mensual */}
+          <Dialog
+            open={summaryOpen}
+            onOpenChange={open => {
+              setSummaryOpen(open)
+              if (!open) setSelectedMonthKey(null)
+            }}
+          >
+            <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  {selectedMonthData ? `Semanas de ${selectedMonthData.label}` : "Resumen de horas por mes"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedMonthData
+                    ? "Horas realizadas en cada semana del mes. Pulsa «Volver a los meses» para elegir otro mes."
+                    : "Horas realizadas y objetivo de cada mes del período. Pulsa un mes para ver su desglose semanal."}
+                </DialogDescription>
+              </DialogHeader>
+
+              {selectedMonthData === null ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {monthlySummary.map(month => (
+                    <button
+                      key={month.key}
+                      type="button"
+                      onClick={() => setSelectedMonthKey(month.key)}
+                      className={cn(
+                        "group rounded-lg border p-3 text-left transition-colors hover:border-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        month.difference >= 0
+                          ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20"
+                          : "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold">{month.label}</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                      <p className={cn(
+                        "mt-2 text-2xl font-bold",
+                        month.difference >= 0 ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"
+                      )}>
+                        {formatHours(month.totalHours)}
+                      </p>
+                      <div className="mt-1 flex justify-between text-xs text-muted-foreground">
+                        <span>Objetivo {formatHours(month.target)}</span>
+                        <span className="font-medium">{month.percentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-500", month.difference >= 0 ? "bg-green-500" : "bg-blue-500")}
+                          style={{ width: `${Math.min(100, month.percentage)}%` }}
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setSelectedMonthKey(null)}>
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Volver a los meses
+                  </Button>
+
+                  <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/40 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-semibold">{selectedMonthData.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedMonthData.weeks.length} semanas · objetivo {formatHours(selectedMonthData.target)}
+                      </p>
+                    </div>
+                    <p className={cn(
+                      "text-xl font-bold",
+                      selectedMonthData.difference >= 0 ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"
+                    )}>
+                      {formatHours(selectedMonthData.totalHours)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {selectedMonthData.weeks.map(week => (
+                      <div key={week.weekNumber} className="rounded-lg border px-3 py-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium">Semana {week.weekNumber}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatDateDisplay(week.start)} - {formatDateDisplay(week.end)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className={cn(
+                              "font-mono text-sm font-bold",
+                              week.difference >= 0 ? "text-green-600 dark:text-green-400" : "text-blue-600 dark:text-blue-400"
+                            )}>
+                              {formatHours(week.totalHours)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {week.difference >= 0 ? "✓ objetivo" : `${week.percentage.toFixed(0)}% de ${formatHours(week.target)}`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                          <div
+                            className={cn("h-full rounded-full transition-all duration-500", week.difference >= 0 ? "bg-green-500" : "bg-blue-500")}
+                            style={{ width: `${Math.min(100, week.percentage)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {selectedMonthData.weeks.length === 0 && (
+                      <p className="py-6 text-center text-sm text-muted-foreground">
+                        No hay semanas registradas en este mes.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         </div>
