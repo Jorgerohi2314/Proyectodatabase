@@ -8,7 +8,8 @@ const UMBRAL_HORAS = 4
  * GET /api/stats/horas
  * Acepta los filtros sector, laboralYear y onlyInserted.
  * Divide los usuarios según el total de horas dedicadas (suma de las entradas del diario):
- * - menosDe4: usuarios con total de horas < 4
+ * - menosDe4: usuarios con total de horas < 4, excluyendo los marcados como insertados
+ *   (un usuario insertado ya ha accedido al mercado laboral y no debe computarse aquí)
  * - cuatroOMas: usuarios con total de horas >= 4
  * - sinRegistros: usuarios sin horas registradas en el diario
  */
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
         id: true,
         nombre: true,
         apellidos: true,
+        insertado: true,
         diaryEntries: {
           select: { horas: true },
         },
@@ -55,6 +57,9 @@ export async function GET(request: NextRequest) {
       }
 
       if (totalHoras < UMBRAL_HORAS) {
+        // Los usuarios ya insertados no cuentan como "menos de 4 horas":
+        // se excluyen de esta estadística aunque no alcancen el umbral.
+        if (user.insertado === 'SI') continue
         menosDe4.push(info)
       } else {
         cuatroOMas.push(info)
